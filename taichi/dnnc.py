@@ -406,7 +406,7 @@ class DNNC(object):
 
     def _evaluation_indomain(self, model, test_data, test_labels, tokenizer, train_data, train_labels, device, eval_batch_size=128):
         model.eval()
-
+        unique_labels = set(test_labels)
         test_data_in_nli_format = []
         test_labels_in_nli_format = []
         for i, sample1 in enumerate(test_data):
@@ -438,7 +438,7 @@ class DNNC(object):
                 else:
                     preds = np.concatenate((preds, pred))
                     
-        preds = np.reshape(preds, (-1, len(train_data), 2))
+        preds = np.reshape(preds, (-1, len(unique_labels), 2))
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
 
@@ -447,13 +447,13 @@ class DNNC(object):
             preds = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
                 if prob > threshold:
-                    preds.append(0)
+                    preds.append(pred_label)
                 else:
-                    preds.append(1)
-            acc = accuracy_score(test_labels_in_nli_format, preds)
-            prec = precision_score(test_labels_in_nli_format, preds, average='macro', zero_division=1)
-            recall = recall_score(test_labels_in_nli_format, preds, average='macro', zero_division=1)
-            f1 = f1_score(test_labels_in_nli_format, preds, average='macro', zero_division=1)
+                    preds.append(len(unique_labels))
+            acc = accuracy_score(test_labels, preds)
+            prec = precision_score(test_labels, preds, average='macro', zero_division=1)
+            recall = recall_score(test_labels, preds, average='macro', zero_division=1)
+            f1 = f1_score(test_labels, preds, average='macro', zero_division=1)
             res.append((threshold, acc, prec, recall, f1))
         return res, max_prob
 
