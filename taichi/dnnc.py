@@ -148,9 +148,8 @@ class DNNC(object):
         train_languages = list(aggregated_data_df.language)
 
         unique_languages = sorted(list(set(train_languages)))
-        self.train_labels = [" ".join(l.split("_")).strip() for l in train_labels]
-        
-        aggregated_data_df['label'] = train_labels
+        self.train_labels = [" ".join(l.split("_")).strip() for l in train_labels] 
+        # aggregated_data_df['label'] = train_labels
         # map languages to unique labels it contains examples of in the data
         lang2label = {}
         for language in unique_languages:
@@ -164,7 +163,7 @@ class DNNC(object):
                 for index, label in enumerate(labels):
                     multilingual_label2idx[language][label] = index
 
-
+        self.train_label_ids = [multilingual_label2idx[config.language][l] for l in train_labels]
         # get unique labels and make sure the order stays consistent by sorting
         unique_train_labels = sorted(list(set(train_labels)))
         
@@ -368,8 +367,7 @@ class DNNC(object):
             if config.transform_labels:
                 unique_labels = [str(multilingual_label2idx[config.language][l]) for l in self.unique_test_labels]
 
-        res_indomain, prob_indomain = self._evaluation_indomain(model, self.test_data, self.test_label_ids, self.tokenizer, 
-                                                                self.train_data, self.train_labels, self.device)
+        res_indomain, prob_indomain = self._evaluation_indomain(model, self.test_data, self.test_label_ids, self.tokenizer, self.train_data, self.train_label_ids, self.device)
         # logger.info(f"in-domain eval at epoch: {epoch}: {res_indomain}")
         res_ood, prob_ood = self._evaluation_ood(model, self.ood_test_data, self.tokenizer, self.train_data, self.device)
         # logger.info(f"ood eval at epoch: {epoch}: {res_ood}")
@@ -407,11 +405,11 @@ class DNNC(object):
 
     def _evaluation_indomain(self, model, test_data, test_labels, tokenizer, train_data, train_labels, device, eval_batch_size=128):
         model.eval()
-        unique_labels = list(set(test_labels))
+        unique_labels = self.unique_test_labels
         test_data_in_nli_format = []
         test_labels_in_nli_format = []
         for i, sample1 in enumerate(test_data):
-            for j, sample2 in enumerate(unique_labels):
+            for j, sample2 in enumerate(train_data):
                 test_data_in_nli_format.append((sample1, sample2))
                 #if test_labels[i] == train_labels[j]:
                 #    test_labels_in_nli_format.append(1)
@@ -438,16 +436,15 @@ class DNNC(object):
                 else:
                     preds = np.concatenate((preds, pred))
                     
-        preds = np.reshape(preds, (-1, len(unique_labels), 2))
+        preds = np.reshape(preds, (-1, len(train_data), 2))
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
-        print("pred_labels:\n", max_pos_idx)
         res = []
         for threshold in np.arange(0.1, .91, 0.09):
             preds = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
                 if prob > threshold:
-                    preds.append(pred_label)
+                    preds.append(train_labels[pred_label])
                 else:
                     preds.append(len(unique_labels))
 
