@@ -185,17 +185,17 @@ class DNNC(object):
         # create positive and negativetrain examples - assumes the language throughout is same
         positive_train_examples = []
         negative_train_examples = []
-        for i in range(len(train_data)):
-            for j in range(len(train_data)):
-                if train_labels[i] == train_labels[j]:
+        for i in range(len(self.train_data)):
+            for j in range(len(self.train_data)):
+                if self.train_labels[i] == self.train_labels[j]:
                     if j <= i:
                         continue
                         
-                    positive_train_examples.append((train_data[i], train_data[j], train_languages[j]))
-                    positive_train_examples.append((train_data[j], train_data[i], train_languages[i]))
+                    positive_train_examples.append((self.train_data[i], self.train_data[j], train_languages[j]))
+                    positive_train_examples.append((self.train_data[j], self.train_data[i], train_languages[i]))
 
                 else:
-                    negative_train_examples.append((train_data[i], train_data[j], train_languages[i]))
+                    negative_train_examples.append((self.train_data[i], self.train_data[j], train_languages[i]))
 
         # # get negative examples keeping language in mind
         # negative_train_examples = []
@@ -235,7 +235,7 @@ class DNNC(object):
 
         # for dnnc, unique train labels should get replaced by train data
         for e in ood_train_data:
-            for l in train_data:
+            for l in self.train_data:
                 ood_train_examples.append((e, l))
         ood_train_features = self.tokenizer(ood_train_examples, return_tensors="pt", padding='max_length', max_length=64, truncation=True)
         ood_train_labels = torch.tensor([1 for _ in ood_train_examples])
@@ -255,8 +255,9 @@ class DNNC(object):
         if config.language:
             test_language = config.language
             self.unique_test_labels = lang2label[test_language]
-            self.test_labels = [" ".join(l.split("_")).strip() for l in self.test_labels]
             self.test_label_ids = [multilingual_label2idx[config.language][l] for l in self.test_labels]
+            self.test_labels = [" ".join(l.split("_")).strip() for l in self.test_labels]
+            # self.test_label_ids = [multilingual_label2idx[config.language][l] for l in self.test_labels]
 
         # load oos test dataloader
         self.ood_test_data = []
@@ -367,7 +368,7 @@ class DNNC(object):
             if config.transform_labels:
                 unique_labels = [str(multilingual_label2idx[config.language][l]) for l in self.unique_test_labels]
 
-        res_indomain, prob_indomain = self._evaluation_indomain(model, self.test_data, self.test_labels, self.tokenizer, 
+        res_indomain, prob_indomain = self._evaluation_indomain(model, self.test_data, self.test_label_ids, self.tokenizer, 
                                                                 self.train_data, self.train_labels, self.device)
         # logger.info(f"in-domain eval at epoch: {epoch}: {res_indomain}")
         res_ood, prob_ood = self._evaluation_ood(model, self.ood_test_data, self.tokenizer, self.train_data, self.device)
@@ -406,17 +407,16 @@ class DNNC(object):
 
     def _evaluation_indomain(self, model, test_data, test_labels, tokenizer, train_data, train_labels, device, eval_batch_size=128):
         model.eval()
-        unique_labels = set(test_labels)
+        unique_labels = list(set(test_labels))
         test_data_in_nli_format = []
         test_labels_in_nli_format = []
         for i, sample1 in enumerate(test_data):
-            for j, sample2 in enumerate(train_data):
-                test_data_in_nli_format.append((e, f))
-                if test_labels[i] == train_labels[j]:
-                    test_labels_in_nli_format.append(1)
-                else:
-                    test_labels_in_nli_format.append(0)    
-               
+            for j, sample2 in enumerate(unique_labels):
+                test_data_in_nli_format.append((sample1, sample2))
+                #if test_labels[i] == train_labels[j]:
+                #    test_labels_in_nli_format.append(1)
+                #else:
+                #    test_labels_in_nli_format.append(0)    
         features = tokenizer(test_data_in_nli_format, 
                             return_tensors="pt", 
                             padding='max_length', 
@@ -441,15 +441,16 @@ class DNNC(object):
         preds = np.reshape(preds, (-1, len(unique_labels), 2))
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
-
+        print("pred_labels:\n", max_pos_idx)
         res = []
-        for threshold in np.arange(0, .91, 0.01):
+        for threshold in np.arange(0.1, .91, 0.09):
             preds = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
                 if prob > threshold:
                     preds.append(pred_label)
                 else:
                     preds.append(len(unique_labels))
+
             acc = accuracy_score(test_labels, preds)
             prec = precision_score(test_labels, preds, average='macro', zero_division=1)
             recall = recall_score(test_labels, preds, average='macro', zero_division=1)
