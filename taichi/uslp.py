@@ -130,7 +130,7 @@ class USLP(object):
         # set up device
         self.device = torch.device("cuda" if torch.cuda.is_available() and not config.no_cuda else "cpu")
 
-        print(f"device: {self.device}")
+        logger.info(f"device: {self.device}")
 
         # set up seeds
         np.random.seed(config.seed)
