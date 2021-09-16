@@ -31,6 +31,10 @@ from sklearn.metrics import (
 import copy
 from taichi.layerdrop import LayerDropModuleList
 
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S',
+                    level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class Config:
@@ -97,7 +101,7 @@ class USLP(object):
     Main class for USLP (Utterance Semantic Label Pair) including initialization,
     training and evaluation
     """
-    def __init__(self, config_file='./taichi/config.json'): 
+    def __init__(self, config_file='./taichi/uslp_config.json'): 
         with open(config_file, 'r') as f:
             config_dict = json.loads(f.read())
         self.config = Config(config_dict)
@@ -121,7 +125,7 @@ class USLP(object):
         initialize and setup environment, data and model for training
         """ 
         config = self.config
-        #logger.info('config:{}'.format(config))
+        logger.info('config:{}'.format(config))
 
         # set up device
         self.device = torch.device("cuda" if torch.cuda.is_available() and not config.no_cuda else "cpu")
@@ -144,8 +148,10 @@ class USLP(object):
         train_data = list(aggregated_data_df.utterance)
         train_labels = list(aggregated_data_df.label)
         train_languages = list(aggregated_data_df.language)
-
+        
         unique_languages = sorted(list(set(train_languages)))
+        
+        self.train_data = train_data
         train_labels = [" ".join(l.split("_")).strip() for l in train_labels]
         
         aggregated_data_df['label'] = train_labels
@@ -283,10 +289,10 @@ class USLP(object):
         loss_fct = nn.CrossEntropyLoss()
 
         # training pipeline
-        #logging.info("***** Running training *****")
-        #logging.info("  Num positive examples = {}".format(len(train_data)))
-        #logging.info("  Batch size = %d", config.train_batch_size)
-        #logging.info("  Num steps = %d", num_train_optimization_steps)
+        logger.info("***** Running training *****")
+        logger.info("  Num positive examples = {}".format(len(self.train_data)))
+        logger.info("  Batch size = %d", config.train_batch_size)
+        logger.info("  Num steps = %d", num_train_optimization_steps)
 
         progress_bar = tqdm(total=num_train_optimization_steps, dynamic_ncols=True, initial=0)
         for epoch in range(config.num_train_epochs):
@@ -349,10 +355,10 @@ class USLP(object):
                 unique_labels = [str(multilingual_label2idx[config.language][l]) for l in self.unique_test_labels]
 
         res_indomain, prob_indomain = self._evaluation_indomain(model, self.test_data, self.test_label_ids, self.tokenizer, unique_labels, self.device)
-        # logger.info(f"in-domain eval at epoch: {epoch}: {res_indomain}")
+        logger.info(f"in-domain eval at 0.01 threshold: {res_indomain[1]}")
         res_ood, prob_ood = self._evaluation_ood(model, self.ood_test_data, self.tokenizer, unique_labels, self.device)
-        # logger.info(f"ood eval at epoch: {epoch}: {res_ood}")
-        # logger.info("***"*6)
+        logger.info(f"ood eval at 0.01 threshold: {res_ood[1]}")
+        logger.info("***"*6)
 
         # save final results
         if config.save_result_fp is not None:

@@ -32,6 +32,11 @@ import copy
 from taichi.layerdrop import LayerDropModuleList
 
 
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S',
+                    level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class Config:
     """
@@ -100,6 +105,7 @@ class DNNC(object):
         with open(config_file, 'r') as f:
             config_dict = json.loads(f.read())
         self.config = Config(config_dict)
+        
         self.device = None
         self.tokenizer = None
         self.model = None
@@ -123,12 +129,12 @@ class DNNC(object):
         initialize and setup environment, data and model for training
         """ 
         config = self.config
-        #logger.info('config:{}'.format(config))
+        logger.info('config: {}'.format(config))
 
         # set up device
         self.device = torch.device("cuda" if torch.cuda.is_available() and not config.no_cuda else "cpu")
 
-        print(f"device: {self.device}")
+        logger.info("device: {}".format(self.device))
 
         # set up seeds
         np.random.seed(config.seed)
@@ -302,10 +308,10 @@ class DNNC(object):
         loss_fct = nn.CrossEntropyLoss()
 
         # training pipeline
-        #logging.info("***** Running training *****")
-        #logging.info("  Num positive examples = {}".format(len(train_data)))
-        #logging.info("  Batch size = %d", config.train_batch_size)
-        #logging.info("  Num steps = %d", num_train_optimization_steps)
+        logging.info("***** Running training *****")
+        logging.info("  Num positive examples = {}".format(len(self.train_data)))
+        logging.info("  Batch size = %d", config.train_batch_size)
+        logging.info("  Num steps = %d", num_train_optimization_steps)
 
         progress_bar = tqdm(total=num_train_optimization_steps, dynamic_ncols=True, initial=0)
         for epoch in range(config.num_train_epochs):
@@ -368,10 +374,10 @@ class DNNC(object):
                 unique_labels = [str(multilingual_label2idx[config.language][l]) for l in self.unique_test_labels]
 
         res_indomain, prob_indomain = self._evaluation_indomain(model, self.test_data, self.test_label_ids, self.tokenizer, self.train_data, self.train_label_ids, self.device)
-        # logger.info(f"in-domain eval at epoch: {epoch}: {res_indomain}")
+        logger.info(f"in-domain eval: {res_indomain[1]}")
         res_ood, prob_ood = self._evaluation_ood(model, self.ood_test_data, self.tokenizer, self.train_data, self.device)
-        # logger.info(f"ood eval at epoch: {epoch}: {res_ood}")
-        # logger.info("***"*6)
+        logger.info(f"ood eval: {res_ood[1]}")
+        logger.info("***"*6)
 
         # save final results
         if config.save_result_fp is not None:
@@ -440,7 +446,7 @@ class DNNC(object):
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
         res = []
-        for threshold in np.arange(0.1, .91, 0.09):
+        for threshold in np.arange(0.0, .91, 0.01):
             preds = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
                 if prob > threshold:
