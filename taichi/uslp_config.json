@@ -1,7 +1,6 @@
 {
     "bert_model": "xlm-roberta-base",
     "checkpoint_dir": "/export/home/sharvin-scratchpad/taichi-internal/model",
-    "data_aug": false,
     "data_dir": "/export/share/jqu/few_shot-236-assets/data/appen_use/10-sample",
     "freeze_embedding": false,
     "gradient_accumulation_steps": 1,
