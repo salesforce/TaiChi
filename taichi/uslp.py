@@ -173,16 +173,6 @@ class USLP(object):
         unique_train_labels = sorted(list(set(train_labels)))
         
 
-        # if config.data_aug:
-            # below is the past code; will have to align this code with nlpaug (https://github.com/makcedward/nlpaug)
-            
-            # for aug in ["cbert_aug", "rand_insert_aug", "rand_swap_aug", "syn_aug"]:
-            #     d, aug_labels, language = self._load_data_from_csv(os.path.join(args.data_dir, f"data_aug/{aug}.csv"))
-            #     train_data.extend(d)
-            #     aug_labels = [" ".join(l.split("_")).strip() for l in aug_labels]
-            #     train_labels.extend(aug_labels)
-            #     train_languages.extend(language)
-
         # get positive examples with language information to aid with negative examples
         positive_train_examples = [(data, label, lang) for data, label, lang in zip(train_data, train_labels, train_languages)]
 
