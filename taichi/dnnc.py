@@ -148,13 +148,13 @@ class DNNC(object):
 
         # train_dataloader
         #train_data, train_labels, train_languages = self._load_data_from_csv(os.path.join(config.data_dir, "aggregated_appen.csv"))
-        aggregated_data_df = pd.read_csv(os.path.join(config.data_dir, "train.csv"), names=['utterance', 'label', 'language'])
+        aggregated_data_df = pd.read_csv(os.path.join(config.data_dir, "train.csv"), names=['utterance', 'language', 'label'])
         self.train_data = list(aggregated_data_df.utterance)
-        train_labels = list(aggregated_data_df.label)
-        train_languages = list(aggregated_data_df.language)
+        self.train_labels = list(aggregated_data_df.label)
+        self.train_languages = list(aggregated_data_df.language)
 
-        unique_languages = sorted(list(set(train_languages)))
-        self.train_labels = [" ".join(l.split("_")).strip() for l in train_labels] 
+        unique_languages = sorted(list(set(self.train_languages)))
+        # self.train_labels = [" ".join(l.split("_")).strip() for l in train_labels] 
         # aggregated_data_df['label'] = train_labels
         # map languages to unique labels it contains examples of in the data
         lang2label = {}
@@ -169,9 +169,9 @@ class DNNC(object):
                 for index, label in enumerate(labels):
                     multilingual_label2idx[language][label] = index
 
-        self.train_label_ids = [multilingual_label2idx[config.language][l] for l in train_labels]
+        self.train_label_ids = [multilingual_label2idx[lang][lbl] for lbl, lang in zip(self.train_labels, self.train_languages)]
         # get unique labels and make sure the order stays consistent by sorting
-        unique_train_labels = sorted(list(set(train_labels)))
+        unique_train_labels = sorted(list(set(self.train_labels)))
 
 
         # get positive examples with language information to aid with negative examples
@@ -186,11 +186,11 @@ class DNNC(object):
                     if j <= i:
                         continue
                         
-                    positive_train_examples.append((self.train_data[i], self.train_data[j], train_languages[j]))
-                    positive_train_examples.append((self.train_data[j], self.train_data[i], train_languages[i]))
+                    positive_train_examples.append((self.train_data[i], self.train_data[j], self.train_languages[j]))
+                    positive_train_examples.append((self.train_data[j], self.train_data[i], self.train_languages[i]))
 
                 else:
-                    negative_train_examples.append((self.train_data[i], self.train_data[j], train_languages[i]))
+                    negative_train_examples.append((self.train_data[i], self.train_data[j], self.train_languages[i]))
 
         # # get negative examples keeping language in mind
         # negative_train_examples = []
@@ -239,20 +239,20 @@ class DNNC(object):
 
 
         # load test dataloader
-        self.test_data, self.test_labels = [], []
-        with open(os.path.join(config.data_dir, "test.csv")) as file:
+        self.test_data, self.test_labels, self.test_languages = [], [], []
+        with open(os.path.join(config.data_dir, "test-en.csv")) as file:
             csv_file = csv.reader(file)
             for line in csv_file:
                 self.test_data.append(line[0])
-                self.test_labels.append(line[1])
+                self.test_languages.append(line[1])
+                self.test_labels.append(line[2])
 
         # detect language based on assumption that test data would have only one language
-        if config.language:
-            test_language = config.language
-            self.unique_test_labels = lang2label[test_language]
-            self.test_label_ids = [multilingual_label2idx[config.language][l] for l in self.test_labels]
-            self.test_labels = [" ".join(l.split("_")).strip() for l in self.test_labels]
-            # self.test_label_ids = [multilingual_label2idx[config.language][l] for l in self.test_labels]
+    
+        self.unique_test_labels = lang2label
+        self.test_label_ids = [multilingual_label2idx[lang][lbl] for lbl, lang in zip(self.test_labels, self.test_languages)]
+        # self.test_labels = [" ".join(l.split("_")).strip() for l in self.test_labels]
+        # self.test_label_ids = [multilingual_label2idx[config.language][l] for l in self.test_labels]
 
         # load oos test dataloader
         self.ood_test_data = []
@@ -358,10 +358,10 @@ class DNNC(object):
         config = self.config
         model = AutoModelForSequenceClassification.from_pretrained(config.saved_model_path)
         model.to(self.device)
-        if config.language:
-            unique_labels = self.unique_test_labels
-            if config.transform_labels:
-                unique_labels = [str(multilingual_label2idx[config.language][l]) for l in self.unique_test_labels]
+        language = self.test_languages[0]
+        unique_labels = self.unique_test_labels[language]
+        if config.transform_labels:
+            unique_labels = [str(multilingual_label2idx[language][l]) for l in self.unique_test_labels[language]]
 
         res_indomain, prob_indomain = self._evaluation_indomain(model, self.test_data, self.test_label_ids, self.tokenizer, self.train_data, self.train_label_ids, self.device)
         logger.info(f"in-domain eval: {res_indomain[1]}")
@@ -394,8 +394,8 @@ class DNNC(object):
             csv_file = csv.reader(file)
             for line in csv_file:
                 data.append(line[0])
-                labels.append(line[1])
-                languages.append(line[2])
+                languages.append(line[1])
+                labels.append(line[2])
         return data, labels, languages    
 
 

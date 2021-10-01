@@ -144,7 +144,7 @@ class USLP(object):
 
         # train_dataloader
         #train_data, train_labels, train_languages = self._load_data_from_csv(os.path.join(config.data_dir, "aggregated_appen.csv"))
-        aggregated_data_df = pd.read_csv(os.path.join(config.data_dir, "train.csv"), names=['utterance', 'label', 'language'])
+        aggregated_data_df = pd.read_csv(os.path.join(config.data_dir, "train.csv"), names=['utterance', 'language', 'label'])
         train_data = list(aggregated_data_df.utterance)
         train_labels = list(aggregated_data_df.label)
         train_languages = list(aggregated_data_df.language)
@@ -221,19 +221,18 @@ class USLP(object):
 
 
         # load test dataloader
-        self.test_data, self.test_labels = [], []
+        self.test_data, self.test_labels, self.test_languages = [], [], []
         with open(os.path.join(config.data_dir, "test.csv")) as file:
             csv_file = csv.reader(file)
             for line in csv_file:
                 self.test_data.append(line[0])
-                self.test_labels.append(line[1])
+                self.test_languages.append(line[1])
+                self.test_labels.append(line[2])
 
-        # detect language based on assumption that test data would have only one language
-        if config.language:
-            test_language = config.language
-            self.unique_test_labels = lang2label[test_language]
-            self.test_labels = [" ".join(l.split("_")).strip() for l in self.test_labels]
-            self.test_label_ids = [multilingual_label2idx[config.language][l] for l in self.test_labels]
+        # detect language and assign label2idx for individual languages appropriately
+        self.unique_test_labels = lang2label
+        #self.test_labels = [" ".join(l.split("_")).strip() for l in self.test_labels if '_' in l]
+        self.test_label_ids = [multilingual_label2idx[lang][lbl] for lbl, lang in zip(self.test_labels, self.test_languages)]
 
         # load oos test dataloader
         self.ood_test_data = []
@@ -339,10 +338,10 @@ class USLP(object):
         config = self.config
         model = AutoModelForSequenceClassification.from_pretrained(config.saved_model_path)
         model.to(self.device)
-        if config.language:
-            unique_labels = self.unique_test_labels
-            if config.transform_labels:
-                unique_labels = [str(multilingual_label2idx[config.language][l]) for l in self.unique_test_labels]
+        language = self.test_languages[0]
+        unique_labels = self.unique_test_labels[language]
+        if config.transform_labels:
+            unique_labels = [str(multilingual_label2idx[language][l]) for l in self.unique_test_labels[language]]
 
         res_indomain, prob_indomain = self._evaluation_indomain(model, self.test_data, self.test_label_ids, self.tokenizer, unique_labels, self.device)
         logger.info(f"in-domain eval at 0.01 threshold: {res_indomain[1]}")
