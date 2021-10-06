@@ -4,6 +4,7 @@ import csv
 import json
 import logging
 import random
+import re
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
@@ -20,12 +21,21 @@ from transformers import (
 )
 
 
+from sklearn.preprocessing import label_binarize
+
 from sklearn.metrics import (
     classification_report,
     f1_score,
     accuracy_score,
     precision_score,
     recall_score,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+    roc_curve,
+    RocCurveDisplay,
+    precision_recall_curve,
+    average_precision_score,
+    PrecisionRecallDisplay,
 )
 
 import copy
@@ -162,12 +172,14 @@ class USLP(object):
             lang2label[language] = sorted(list(set(lang_df.label)))
         
         multilingual_label2idx = {}
+        self.multilingual_idx2label = {}
         for language, labels in lang2label.items():
             if language not in multilingual_label2idx:
                 multilingual_label2idx[language] = {}
+                self.multilingual_idx2label[language] = {}
                 for index, label in enumerate(labels):
                     multilingual_label2idx[language][label] = index
-
+                    self.multilingual_idx2label[language][index] = label
 
         # get unique labels and make sure the order stays consistent by sorting
         unique_train_labels = sorted(list(set(train_labels)))
@@ -343,9 +355,11 @@ class USLP(object):
         if config.transform_labels:
             unique_labels = [str(multilingual_label2idx[language][l]) for l in self.unique_test_labels[language]]
 
-        res_indomain, prob_indomain = self._evaluation_indomain(model, self.test_data, self.test_label_ids, self.tokenizer, unique_labels, self.device)
+        res_indomain, prob_indomain = self._evaluation_indomain(model, language, self.test_data, self.test_label_ids, self.tokenizer, unique_labels, self.device)
         logger.info(f"in-domain eval at 0.01 threshold: {res_indomain[1]}")
-        res_ood, prob_ood = self._evaluation_ood(model, self.ood_test_data, self.tokenizer, unique_labels, self.device)
+       
+        res_ood, prob_ood = self._evaluation_ood(model, language, self.ood_test_data, self.tokenizer, unique_labels, self.device)
+        
         logger.info(f"ood eval at 0.01 threshold: {res_ood[1]}")
         logger.info("***"*6)
 
@@ -379,7 +393,7 @@ class USLP(object):
         return data, labels, languages    
 
 
-    def _evaluation_indomain(self, model, test_data, test_labels, tokenizer, unique_labels, device, eval_batch_size=128):
+    def _evaluation_indomain(self, model, language, test_data, test_labels, tokenizer, unique_labels, device, eval_batch_size=128):
         model.eval()
 
         test_data_in_nli_format = []
@@ -396,9 +410,12 @@ class USLP(object):
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
+        encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
                 input_ids, attention_mask = batch
+                for i, input_id in enumerate(input_ids):
+                    encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
                 logits = model(input_ids = input_ids, attention_mask = attention_mask)[0]
@@ -407,29 +424,125 @@ class USLP(object):
                     preds = pred
                 else:
                     preds = np.concatenate((preds, pred))
-                    
+        
         preds = np.reshape(preds, (-1, len(unique_labels), 2))
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
+        decoded_inputs = []
+
+        Y_test = label_binarize(test_labels, classes=range(len(unique_labels)))
+        y_score = preds[:,:,0]
+        
+        # For each class
+        precision = dict()
+        recall = dict()
+        average_precision = dict()
+        for i in range(len(unique_labels)):
+            precision[i], recall[i], _ = precision_recall_curve(Y_test[:, i], y_score[:, i])
+            average_precision[i] = average_precision_score(Y_test[:, i], y_score[:, i])
+
+        # A "micro-average": quantifying score on all classes jointly
+        precision["micro"], recall["micro"], _ = precision_recall_curve(
+            Y_test.ravel(), y_score.ravel()
+        )
+        average_precision["micro"] = average_precision_score(Y_test, y_score, average="micro")
+
+        display = PrecisionRecallDisplay(
+            recall=recall["micro"],
+            precision=precision["micro"],
+            average_precision=average_precision["micro"],
+        )
+        display.plot()
+        _ = display.ax_.set_title("Micro-averaged over all classes")
+
+        import matplotlib.pyplot as plt
+
+        # setup plot details
+        cmap = plt.cm.tab20
+        cmaplist = [cmap(i) for i in range(cmap.N)]
+        print(cmaplist)
+        # create the new map
+        colors = cmaplist[:len(unique_labels)]
+
+        _, ax = plt.subplots(figsize=(14, 16))
+
+        f_scores = np.linspace(0.2, 1.0, num=5)
+        lines, labels = [], []
+        for f_score in f_scores:
+            x = np.linspace(0.01, 1)
+            y = f_score * x / (2 * x - f_score)
+            (l,) = plt.plot(x[y >= 0], y[y >= 0], color="gray", alpha=0.2)
+            plt.annotate("f1={0:0.1f}".format(f_score), xy=(0.9, y[45] + 0.02))
+
+        display = PrecisionRecallDisplay(
+            recall=recall["micro"],
+            precision=precision["micro"],
+            average_precision=average_precision["micro"],
+        )
+        display.plot(ax=ax, name="Micro-average precision-recall", color="gold")
+
+        for i, color in zip(range(len(unique_labels)), colors):
+            display = PrecisionRecallDisplay(
+                recall=recall[i],
+                precision=precision[i],
+                average_precision=average_precision[i],
+            )
+            display.plot(ax=ax, name=f"Precision-recall for class: {unique_labels[i]}", color=color)
+
+        # add the legend for the iso-f1 curves
+        handles, labels = display.ax_.get_legend_handles_labels()
+        handles.extend([l])
+        labels.extend(["iso-f1 curves"])
+        # set the legend and the axes
+        ax.set_xlim([0.0, 1.0])
+        ax.set_ylim([0.0, 1.05])
+        ax.legend(handles=handles, labels=labels, loc="best")
+        ax.set_title("Extension of Precision-Recall curve to multi-class")
+
+        plt.show()
+
+        plt.savefig("./multiclass-pr-curve.png")
+
+
+        # decode all examples to find misclassified examples
+        for i, test_label in enumerate(test_labels):
+            decoded_input = tokenizer.decode(encoded_inputs[len(unique_labels) * i + test_label], skip_special_tokens=False)
+            decoded_input = re.split("<s>|</s>", decoded_input)[1].strip()
+            decoded_inputs.append(decoded_input)
+
 
         res = []
         for threshold in np.arange(0, .91, 0.01):
             preds = []
+            misclassified = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
                 if prob > threshold:
                     preds.append(pred_label)
                 else:
                     preds.append(len(unique_labels))
+            
+            # detect misclassified examples
+            for pred, test_label, utterance in zip(preds, test_labels, decoded_inputs):
+                if pred != test_label:
+                    if pred != len(unique_labels):
+                        misclassified.append((utterance, self.multilingual_idx2label[language][pred],self.multilingual_idx2label[language][test_label]))
+                    else:
+                        misclassified.append((utterance, "OOD", self.multilingual_idx2label[language][test_label]))
+
+            if threshold == 0.01 or threshold == 0.10:
+                print(classification_report(test_labels, preds, target_names=unique_labels+["OOD"]))
+                cm = confusion_matrix(test_labels, preds)
+                print(cm)
+
             acc = accuracy_score(test_labels, preds)
             prec = precision_score(test_labels, preds, average='macro', zero_division=1)
             recall = recall_score(test_labels, preds, average='macro', zero_division=1)
             f1 = f1_score(test_labels, preds, average='macro', zero_division=1)
-            res.append((threshold, acc, prec, recall, f1))
+            res.append((threshold, acc, prec, recall, f1, misclassified))
         return res, max_prob
 
-
     
-    def _evaluation_ood(self, model, ood_test_data, tokenizer, unique_labels, device, total_intents=40, eval_batch_size=128):
+    def _evaluation_ood(self, model, language, ood_test_data, tokenizer, unique_labels, device, total_intents=40, eval_batch_size=128):
         test_labels = [1 for _ in ood_test_data]
         model.eval()
         
