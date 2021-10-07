@@ -22,7 +22,6 @@ from transformers import (
 
 
 from sklearn.preprocessing import label_binarize
-
 from sklearn.metrics import (
     classification_report,
     f1_score,
@@ -37,6 +36,7 @@ from sklearn.metrics import (
     average_precision_score,
     PrecisionRecallDisplay,
 )
+import matplotlib.pyplot as plt
 
 import copy
 from taichi.layerdrop import LayerDropModuleList
@@ -455,12 +455,9 @@ class USLP(object):
         display.plot()
         _ = display.ax_.set_title("Micro-averaged over all classes")
 
-        import matplotlib.pyplot as plt
-
         # setup plot details
         cmap = plt.cm.tab20
         cmaplist = [cmap(i) for i in range(cmap.N)]
-        print(cmaplist)
         # create the new map
         colors = cmaplist[:len(unique_labels)]
 
@@ -529,10 +526,20 @@ class USLP(object):
                     else:
                         misclassified.append((utterance, "OOD", self.multilingual_idx2label[language][test_label]))
 
+            # save classification report and confusion matrix plots for 0.01 and 0.10 thresholds
             if threshold == 0.01 or threshold == 0.10:
-                print(classification_report(test_labels, preds, target_names=unique_labels+["OOD"]))
+                report = classification_report(test_labels, preds, target_names=unique_labels+["OOD"], output_dict=True, zero_division=1)
+                report_df = pd.DataFrame(report).transpose()
+                report_df.to_csv(f"./classification_report_{threshold}_threshold.csv")
+
                 cm = confusion_matrix(test_labels, preds)
-                print(cm)
+                disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                              display_labels=unique_labels+["OOD"])
+                disp.plot(xticks_rotation='vertical')
+                plt.tight_layout()
+                plt.show()
+
+                plt.savefig(f"./confusion_matrix_at_{threshold}_threshold.png")
 
             acc = accuracy_score(test_labels, preds)
             prec = precision_score(test_labels, preds, average='macro', zero_division=1)
@@ -560,9 +567,12 @@ class USLP(object):
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
+        encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
                 input_ids, attention_mask = batch
+                for input_id in input_ids:
+                    encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
                 logits = model(input_ids = input_ids, attention_mask = attention_mask)[0]
@@ -576,19 +586,65 @@ class USLP(object):
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
 
+
+        #Y_test = test_labels
+        #y_score = preds
+        #precision, recall, _ = precision_recall_curve(Y_test, y_score, pos_label="OOD")
+        #display = PrecisionRecallDisplay(precision=precision, recall=recall).plot()
+        #_ = display.ax_.set_title("2-class Precision-Recall curve")
+
+        #display.plot()
+
+        #plt.show()
+        #plt.savefig("./ood-pr-curve-{threshold}-threshold.png")        
+
+        decoded_inputs = []
+
+        # decode all examples to find misclassified examples
+        for i, test_label in enumerate(test_labels):
+            decoded_input = tokenizer.decode(encoded_inputs[len(unique_labels) * i + test_label], skip_special_tokens=False)
+            decoded_input = re.split("<s>|</s>", decoded_input)[1].strip()
+            decoded_inputs.append(decoded_input)
+
         res = []
         for threshold in np.arange(0, .91, 0.01):
             preds = []
+            misclassified = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
                 if prob > threshold:
                     preds.append(0)
                 else:
                     preds.append(1)
+
+
+            # detect misclassified examples
+            for pred, test_label, utterance in zip(preds, test_labels, decoded_inputs):
+                if pred != test_label:
+                    if pred != 1:
+                        misclassified.append((utterance, "NOT OOD", pred))
+                    else:
+                        misclassified.append((utterance, "OOD", pred))
+                        
+
+            # save classification report and confusion matrix plots for 0.01 and 0.10 thresholds
+            if threshold == 0.01 or threshold == 0.10:
+                report = classification_report(test_labels, preds, target_names=["NOT OOD", "OOD"], output_dict=True, zero_division=1)
+                report_df = pd.DataFrame(report).transpose()
+                report_df.to_csv(f"./ood_classification_report_{threshold}_threshold.csv")
+
+                cm = confusion_matrix(test_labels, preds)
+                disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                              display_labels=["NOT OOD", "OOD"])
+                disp.plot(xticks_rotation='vertical')
+                plt.tight_layout()
+                plt.show()
+                plt.savefig(f"./ood_confusion_matrix_at_{threshold}_threshold.png")                    
+
             # acc = accuracy_score(test_labels, preds)
             # prec = precision_score(test_labels, preds, zero_division=1)
             recall = recall_score(test_labels, preds, zero_division=1)
             # f1 = f1_score(test_labels, preds, zero_division=1)
-            res.append((threshold, recall))
+            res.append((threshold, recall, misclassified))
         return res, max_prob    
 
     def _enable_layer_drop(self, bert, p, max_layer_idx=11):
