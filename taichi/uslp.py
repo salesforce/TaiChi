@@ -234,7 +234,7 @@ class USLP(object):
 
         # load test dataloader
         self.test_data, self.test_labels, self.test_languages = [], [], []
-        with open(os.path.join(config.data_dir, "test.csv")) as file:
+        with open(os.path.join(config.data_dir, "perturbed_airlines_test.csv")) as file:
             csv_file = csv.reader(file)
             for line in csv_file:
                 self.test_data.append(line[0])
@@ -498,7 +498,7 @@ class USLP(object):
 
         plt.show()
 
-        plt.savefig("./multiclass-pr-curve.png")
+        plt.savefig("./perturbed_xlmr_multiclass-pr-curve.png")
 
 
         # decode all examples to find misclassified examples
@@ -528,18 +528,22 @@ class USLP(object):
 
             # save classification report and confusion matrix plots for 0.01 and 0.10 thresholds
             if threshold == 0.01 or threshold == 0.10:
-                report = classification_report(test_labels, preds, target_names=unique_labels+["OOD"], output_dict=True, zero_division=1)
+                if len(set(preds)) == len(unique_labels):
+                    report = classification_report(test_labels, preds, target_names=unique_labels, output_dict=True, zero_division=1)
+                else:
+                    unique_labels += ["OOD"]
+                    report = classification_report(test_labels, preds, target_names=unique_labels, output_dict=True, zero_division=1)
                 report_df = pd.DataFrame(report).transpose()
-                report_df.to_csv(f"./classification_report_{threshold}_threshold.csv")
+                report_df.to_csv(f"./perturbed_xlmr_classification_report_{threshold}_threshold.csv")
 
                 cm = confusion_matrix(test_labels, preds)
                 disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-                              display_labels=unique_labels+["OOD"])
+                              display_labels=unique_labels)
                 disp.plot(xticks_rotation='vertical')
                 plt.tight_layout()
                 plt.show()
 
-                plt.savefig(f"./confusion_matrix_at_{threshold}_threshold.png")
+                plt.savefig(f"./perturbed_xlmr_confusion_matrix_at_{threshold}_threshold.png")
 
             acc = accuracy_score(test_labels, preds)
             prec = precision_score(test_labels, preds, average='macro', zero_division=1)
@@ -630,7 +634,8 @@ class USLP(object):
             if threshold == 0.01 or threshold == 0.10:
                 report = classification_report(test_labels, preds, target_names=["NOT OOD", "OOD"], output_dict=True, zero_division=1)
                 report_df = pd.DataFrame(report).transpose()
-                report_df.to_csv(f"./ood_classification_report_{threshold}_threshold.csv")
+                print(report)
+                report_df.to_csv(f"./perturbed_xlmr_ood_classification_report_{threshold}_threshold.csv")
 
                 cm = confusion_matrix(test_labels, preds)
                 disp = ConfusionMatrixDisplay(confusion_matrix=cm,
@@ -638,7 +643,7 @@ class USLP(object):
                 disp.plot(xticks_rotation='vertical')
                 plt.tight_layout()
                 plt.show()
-                plt.savefig(f"./ood_confusion_matrix_at_{threshold}_threshold.png")                    
+                plt.savefig(f"./perturbed_xlmr_ood_confusion_matrix_at_{threshold}_threshold.png")                    
 
             # acc = accuracy_score(test_labels, preds)
             # prec = precision_score(test_labels, preds, zero_division=1)
