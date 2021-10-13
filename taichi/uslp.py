@@ -436,87 +436,9 @@ class USLP(object):
         preds = np.reshape(preds, (-1, len(unique_labels), 2))
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
-        # decoded_inputs = []
 
         if self.config.error_analysis:
             plot_pr_curve(preds, test_labels, unique_labels)
-        # Y_test = label_binarize(test_labels, classes=range(len(unique_labels)))
-        # y_score = preds[:,:,0]
-        
-        # # For each class
-        # precision = dict()
-        # recall = dict()
-        # average_precision = dict()
-        # for i in range(len(unique_labels)):
-        #     precision[i], recall[i], _ = precision_recall_curve(Y_test[:, i], y_score[:, i])
-        #     average_precision[i] = average_precision_score(Y_test[:, i], y_score[:, i])
-
-        # # A "micro-average": quantifying score on all classes jointly
-        # precision["micro"], recall["micro"], _ = precision_recall_curve(
-        #     Y_test.ravel(), y_score.ravel()
-        # )
-        # average_precision["micro"] = average_precision_score(Y_test, y_score, average="micro")
-
-        # display = PrecisionRecallDisplay(
-        #     recall=recall["micro"],
-        #     precision=precision["micro"],
-        #     average_precision=average_precision["micro"],
-        # )
-        # display.plot()
-        # _ = display.ax_.set_title("Micro-averaged over all classes")
-
-        # # setup plot details
-        # cmap = plt.cm.tab20
-        # cmaplist = [cmap(i) for i in range(cmap.N)]
-        # # create the new map
-        # colors = cmaplist[:len(unique_labels)]
-
-        # _, ax = plt.subplots(figsize=(14, 16))
-
-        # f_scores = np.linspace(0.2, 1.0, num=5)
-        # lines, labels = [], []
-        # for f_score in f_scores:
-        #     x = np.linspace(0.01, 1)
-        #     y = f_score * x / (2 * x - f_score)
-        #     (l,) = plt.plot(x[y >= 0], y[y >= 0], color="gray", alpha=0.2)
-        #     plt.annotate("f1={0:0.1f}".format(f_score), xy=(0.9, y[45] + 0.02))
-
-        # display = PrecisionRecallDisplay(
-        #     recall=recall["micro"],
-        #     precision=precision["micro"],
-        #     average_precision=average_precision["micro"],
-        # )
-        # display.plot(ax=ax, name="Micro-average precision-recall", color="gold")
-
-        # for i, color in zip(range(len(unique_labels)), colors):
-        #     display = PrecisionRecallDisplay(
-        #         recall=recall[i],
-        #         precision=precision[i],
-        #         average_precision=average_precision[i],
-        #     )
-        #     display.plot(ax=ax, name=f"Precision-recall for class: {unique_labels[i]}", color=color)
-
-        # # add the legend for the iso-f1 curves
-        # handles, labels = display.ax_.get_legend_handles_labels()
-        # handles.extend([l])
-        # labels.extend(["iso-f1 curves"])
-        # # set the legend and the axes
-        # ax.set_xlim([0.0, 1.0])
-        # ax.set_ylim([0.0, 1.05])
-        # ax.legend(handles=handles, labels=labels, loc="best")
-        # ax.set_title("Extension of Precision-Recall curve to multi-class")
-
-        # plt.show()
-
-        # plt.savefig("./perturbed_xlmr_multiclass-pr-curve.png")
-
-
-        # decode all examples to find misclassified examples
-        # for i, test_label in enumerate(test_labels):
-        #     decoded_input = tokenizer.decode(encoded_inputs[len(unique_labels) * i + test_label], skip_special_tokens=False)
-        #     decoded_input = re.split("<s>|</s>", decoded_input)[1].strip()
-        #     decoded_inputs.append(decoded_input)
-
 
         res = []
         for threshold in np.arange(0, .91, 0.01):
@@ -528,13 +450,6 @@ class USLP(object):
                 else:
                     preds.append(len(unique_labels))
             
-            # detect misclassified examples
-            # for pred, test_label, utterance in zip(preds, test_labels, decoded_inputs):
-            #     if pred != test_label:
-            #         if pred != len(unique_labels):
-            #             misclassified.append((utterance, self.multilingual_idx2label[language][pred],self.multilingual_idx2label[language][test_label]))
-            #         else:
-            #             misclassified.append((utterance, "OOD", self.multilingual_idx2label[language][test_label]))
 
             # save classification report and confusion matrix plots for 0.01 and 0.10 thresholds
             if threshold == 0.01:
@@ -542,24 +457,7 @@ class USLP(object):
                     get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels, self.multilingual_idx2label, language, tokenizer=tokenizer)
                     get_intent_classification_report(preds, test_labels, unique_labels)
                     plot_confusion_matrix(preds, test_labels, unique_labels)
-                    # get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels, self.multilingual_idx2label, language, tokenizer=tokenizer)
 
-                # if len(set(preds)) == len(unique_labels):
-                #     report = classification_report(test_labels, preds, target_names=unique_labels, output_dict=True, zero_division=1)
-                # else:
-                #     unique_labels += ["OOD"]
-                #     report = classification_report(test_labels, preds, target_names=unique_labels, output_dict=True, zero_division=1)
-                # report_df = pd.DataFrame(report).transpose()
-                # report_df.to_csv(f"./perturbed_xlmr_classification_report_{threshold}_threshold.csv")
-
-                # cm = confusion_matrix(test_labels, preds)
-                # disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-                #               display_labels=unique_labels)
-                # disp.plot(xticks_rotation='vertical')
-                # plt.tight_layout()
-                # plt.show()
-
-                # plt.savefig(f"./perturbed_xlmr_confusion_matrix_at_{threshold}_threshold.png")
 
 
             acc = accuracy_score(test_labels, preds)
@@ -607,26 +505,6 @@ class USLP(object):
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
 
-
-        #Y_test = test_labels
-        #y_score = preds
-        #precision, recall, _ = precision_recall_curve(Y_test, y_score, pos_label="OOD")
-        #display = PrecisionRecallDisplay(precision=precision, recall=recall).plot()
-        #_ = display.ax_.set_title("2-class Precision-Recall curve")
-
-        #display.plot()
-
-        #plt.show()
-        #plt.savefig("./ood-pr-curve-{threshold}-threshold.png")        
-
-        decoded_inputs = []
-
-        # decode all examples to find misclassified examples
-        for i, test_label in enumerate(test_labels):
-            decoded_input = tokenizer.decode(encoded_inputs[(len(unique_labels)-1) * i + test_label], skip_special_tokens=False)
-            decoded_input = re.split("<s>|</s>", decoded_input)[1].strip()
-            decoded_inputs.append(decoded_input)
-
         res = []
         for threshold in np.arange(0, .91, 0.01):
             preds = []
@@ -641,37 +519,8 @@ class USLP(object):
                     preds.append(len(unique_labels)-1)
                     ood_preds.append(1)
 
-            # detect misclassified examples
-            #for pred, test_label, utterance in zip(preds, test_labels, decoded_inputs):
-            #    if pred != test_label:
-            #        if pred != len(unique_labels):
-            #            misclassified.append((utterance, "NOT OOD", pred))
-            #        else:
-            #            misclassified.append((utterance, "OOD", pred))
-                        
-            #ood_gt = []
-            #ood_preds = []
-            #for pred, gt in zip(preds, test_labels):
-            #    ood_gt.append(1)
-            #    if pred == gt:
-            #        ood_preds.append(1)
-            #    else:
-            #        ood_preds.append(0)
-            # save classification report and confusion matrix plots for 0.01 and 0.10 thresholds
 
             if threshold == 0.01 or threshold == 0.10:
-                # report = classification_report(test_labels, preds, target_names=["NOT OOD", "OOD"], output_dict=True, zero_division=1)
-                # report_df = pd.DataFrame(report).transpose()
-                # print(report)
-                # report_df.to_csv(f"./perturbed_xlmr_ood_classification_report_{threshold}_threshold.csv")
-                #  ood_gt = []
-                # ood_preds = []
-                # for pred, gt in zip(preds, test_labels):
-                    # ood_gt.append(1)
-                    # if pred == gt:
-                        # ood_preds.append(1)
-                    # else:
-                        # ood_preds.append(0)
 
                 ood_labels = ["NOT OOD", "OOD"]
                 if self.config.error_analysis:
@@ -679,14 +528,7 @@ class USLP(object):
                     get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels[:-1], self.multilingual_idx2label, language, tokenizer=tokenizer, save_path="./ood_misclassified_samples.csv")
                     get_intent_classification_report(ood_preds, ood_gt, ood_labels, save_path="./ood_report.csv")
                     plot_confusion_matrix(ood_preds, ood_gt, ood_labels, save_path="./ood_confusion_matrix")
-                    # get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels, self.multilingual_idx2label, language, tokenizer=tokenizer)
-                    # cm = confusion_matrix(test_labels, preds)
-                    # disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-                    #               display_labels=["NOT OOD", "OOD"])
-                    # disp.plot(xticks_rotation='vertical')
-                    # plt.tight_layout()
-                    # plt.show()
-                    # plt.savefig(f"./perturbed_xlmr_ood_confusion_matrix_at_{threshold}_threshold.png")                    
+            
 
             # acc = accuracy_score(test_labels, preds)
             # prec = precision_score(test_labels, preds, zero_division=1)
@@ -711,4 +553,3 @@ class USLP(object):
         else:
             raise Exception("invalid module name!")
         return bert
-
