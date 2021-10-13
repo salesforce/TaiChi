@@ -440,7 +440,8 @@ class USLP(object):
 
         if self.config.error_analysis:
             plot_pr_curve(preds, test_labels, unique_labels)
-
+            print(unique_labels)
+            print("pr curve plotted")
         # Y_test = label_binarize(test_labels, classes=range(len(unique_labels)))
         # y_score = preds[:,:,0]
         
@@ -540,9 +541,10 @@ class USLP(object):
             # save classification report and confusion matrix plots for 0.01 and 0.10 thresholds
             if threshold == 0.01:
                 if self.config.error_analysis:
+                    get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels, self.multilingual_idx2label, language, tokenizer=tokenizer)
                     get_intent_classification_report(preds, test_labels, unique_labels)
                     plot_confusion_matrix(preds, test_labels, unique_labels)
-                    get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels, self.multilingual_idx2label, language, tokenizer=tokenizer)
+                    # get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels, self.multilingual_idx2label, language, tokenizer=tokenizer)
 
                 # if len(set(preds)) == len(unique_labels):
                 #     report = classification_report(test_labels, preds, target_names=unique_labels, output_dict=True, zero_division=1)
@@ -566,7 +568,7 @@ class USLP(object):
             prec = precision_score(test_labels, preds, average='macro', zero_division=1)
             recall = recall_score(test_labels, preds, average='macro', zero_division=1)
             f1 = f1_score(test_labels, preds, average='macro', zero_division=1)
-            res.append((threshold, acc, prec, recall, f1, misclassified))
+            res.append((threshold, acc, prec, recall, f1))
         return res, max_prob
 
     
@@ -623,7 +625,7 @@ class USLP(object):
 
         # decode all examples to find misclassified examples
         for i, test_label in enumerate(test_labels):
-            decoded_input = tokenizer.decode(encoded_inputs[len(unique_labels) * i + test_label], skip_special_tokens=False)
+            decoded_input = tokenizer.decode(encoded_inputs[(len(unique_labels)-1) * i + test_label], skip_special_tokens=False)
             decoded_input = re.split("<s>|</s>", decoded_input)[1].strip()
             decoded_inputs.append(decoded_input)
 
@@ -635,7 +637,7 @@ class USLP(object):
                 if prob > threshold:
                     preds.append(pred_label)
                 else:
-                    preds.append(len(unique_labels))
+                    preds.append(len(unique_labels)-1)
 
 
             # detect misclassified examples
@@ -666,9 +668,10 @@ class USLP(object):
                 ood_labels = set(ood_preds)
                 if self.config.error_analysis:
                     self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
+                    get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels[:-1], self.multilingual_idx2label, language, tokenizer=tokenizer)
                     get_intent_classification_report(ood_preds, ood_gt, ood_labels)
                     plot_confusion_matrix(ood_preds, ood_gt, ood_labels)
-                    get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels, self.multilingual_idx2label, language, tokenizer=tokenizer)
+                    # get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels, self.multilingual_idx2label, language, tokenizer=tokenizer)
                     # cm = confusion_matrix(test_labels, preds)
                     # disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                     #               display_labels=["NOT OOD", "OOD"])
@@ -679,9 +682,9 @@ class USLP(object):
 
             # acc = accuracy_score(test_labels, preds)
             # prec = precision_score(test_labels, preds, zero_division=1)
-            recall = recall_score(test_labels, preds, zero_division=1)
+            recall = recall_score(ood_gt, ood_preds, zero_division=1)
             # f1 = f1_score(test_labels, preds, zero_division=1)
-            res.append((threshold, recall, misclassified))
+            res.append((threshold, recall))
         return res, max_prob    
 
     def _enable_layer_drop(self, bert, p, max_layer_idx=11):
