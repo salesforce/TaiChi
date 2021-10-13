@@ -118,7 +118,6 @@ def get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels,
 
     # decode all examples to find misclassified examples
     decoded_inputs = []
-    print(unique_labels)
     for i, test_label in enumerate(test_labels):
         decoded_input = tokenizer.decode(encoded_inputs[len(unique_labels) * i + test_label], skip_special_tokens=False)
         decoded_input = re.split("<s>|</s>", decoded_input)[1].strip()

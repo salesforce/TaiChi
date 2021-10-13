@@ -440,8 +440,6 @@ class USLP(object):
 
         if self.config.error_analysis:
             plot_pr_curve(preds, test_labels, unique_labels)
-            print(unique_labels)
-            print("pr curve plotted")
         # Y_test = label_binarize(test_labels, classes=range(len(unique_labels)))
         # y_score = preds[:,:,0]
         
@@ -632,30 +630,33 @@ class USLP(object):
         res = []
         for threshold in np.arange(0, .91, 0.01):
             preds = []
-            misclassified = []
+            ood_preds = []
+            ood_gt = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
+                ood_gt.append(1)
                 if prob > threshold:
                     preds.append(pred_label)
+                    ood_preds.append(0)
                 else:
                     preds.append(len(unique_labels)-1)
-
+                    ood_preds.append(1)
 
             # detect misclassified examples
-            for pred, test_label, utterance in zip(preds, test_labels, decoded_inputs):
-                if pred != test_label:
-                    if pred != len(unique_labels):
-                        misclassified.append((utterance, "NOT OOD", pred))
-                    else:
-                        misclassified.append((utterance, "OOD", pred))
+            #for pred, test_label, utterance in zip(preds, test_labels, decoded_inputs):
+            #    if pred != test_label:
+            #        if pred != len(unique_labels):
+            #            misclassified.append((utterance, "NOT OOD", pred))
+            #        else:
+            #            misclassified.append((utterance, "OOD", pred))
                         
-            ood_gt = []
-            ood_preds = []
-            for pred, gt in zip(preds, test_labels):
-                ood_gt.append(1)
-                if pred == gt:
-                    ood_preds.append(1)
-                else:
-                    ood_preds.append(0)
+            #ood_gt = []
+            #ood_preds = []
+            #for pred, gt in zip(preds, test_labels):
+            #    ood_gt.append(1)
+            #    if pred == gt:
+            #        ood_preds.append(1)
+            #    else:
+            #        ood_preds.append(0)
             # save classification report and confusion matrix plots for 0.01 and 0.10 thresholds
 
             if threshold == 0.01 or threshold == 0.10:
@@ -672,12 +673,12 @@ class USLP(object):
                     # else:
                         # ood_preds.append(0)
 
-                ood_labels = set(ood_preds)
+                ood_labels = ["NOT OOD", "OOD"]
                 if self.config.error_analysis:
                     self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
-                    get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels[:-1], self.multilingual_idx2label, language, tokenizer=tokenizer)
-                    get_intent_classification_report(ood_preds, ood_gt, ood_labels)
-                    plot_confusion_matrix(ood_preds, ood_gt, ood_labels)
+                    get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels[:-1], self.multilingual_idx2label, language, tokenizer=tokenizer, save_path="./ood_misclassified_samples.csv")
+                    get_intent_classification_report(ood_preds, ood_gt, ood_labels, save_path="./ood_report.csv")
+                    plot_confusion_matrix(ood_preds, ood_gt, ood_labels, save_path="./ood_confusion_matrix")
                     # get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels, self.multilingual_idx2label, language, tokenizer=tokenizer)
                     # cm = confusion_matrix(test_labels, preds)
                     # disp = ConfusionMatrixDisplay(confusion_matrix=cm,
