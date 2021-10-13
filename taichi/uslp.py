@@ -357,8 +357,8 @@ class USLP(object):
         config = self.config
         model = AutoModelForSequenceClassification.from_pretrained(config.saved_model_path)
         model.to(self.device)
-        language = self.test_languages[0]
-        unique_labels = self.unique_test_labels[language]
+        language = self.test_languages[0] # will break on evaluation containing examples from multiple languages
+        unique_labels = self.unique_test_labels[language] 
         if config.transform_labels:
             unique_labels = [str(multilingual_label2idx[language][l]) for l in self.unique_test_labels[language]]
 
@@ -436,7 +436,7 @@ class USLP(object):
         preds = np.reshape(preds, (-1, len(unique_labels), 2))
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
-        decoded_inputs = []
+        # decoded_inputs = []
 
         if self.config.error_analysis:
             plot_pr_curve(preds, test_labels, unique_labels)
@@ -522,7 +522,7 @@ class USLP(object):
         res = []
         for threshold in np.arange(0, .91, 0.01):
             preds = []
-            misclassified = []
+            # misclassified = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
                 if prob > threshold:
                     preds.append(pred_label)
@@ -570,8 +570,8 @@ class USLP(object):
         return res, max_prob
 
     
-    def _evaluation_ood(self, model, language, ood_test_data, tokenizer, unique_labels, device, total_intents=40, eval_batch_size=128):
-        test_labels = [1 for _ in ood_test_data]
+    def _evaluation_ood(self, model, language, ood_test_data, tokenizer, unique_labels, device, eval_batch_size=128):
+        test_labels = [len(unique_labels) for _ in ood_test_data] # every utterance labeled as OOD with index = len(unique_labels) 
         model.eval()
         
         test_data_in_nli_format = []
@@ -633,34 +633,49 @@ class USLP(object):
             misclassified = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
                 if prob > threshold:
-                    preds.append(0)
+                    preds.append(pred_label)
                 else:
-                    preds.append(1)
+                    preds.append(len(unique_labels))
 
 
             # detect misclassified examples
             for pred, test_label, utterance in zip(preds, test_labels, decoded_inputs):
                 if pred != test_label:
-                    if pred != 1:
+                    if pred != len(unique_labels):
                         misclassified.append((utterance, "NOT OOD", pred))
                     else:
                         misclassified.append((utterance, "OOD", pred))
                         
 
             # save classification report and confusion matrix plots for 0.01 and 0.10 thresholds
-            if threshold == 0.01 or threshold == 0.10:
-                report = classification_report(test_labels, preds, target_names=["NOT OOD", "OOD"], output_dict=True, zero_division=1)
-                report_df = pd.DataFrame(report).transpose()
-                print(report)
-                report_df.to_csv(f"./perturbed_xlmr_ood_classification_report_{threshold}_threshold.csv")
 
-                cm = confusion_matrix(test_labels, preds)
-                disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-                              display_labels=["NOT OOD", "OOD"])
-                disp.plot(xticks_rotation='vertical')
-                plt.tight_layout()
-                plt.show()
-                plt.savefig(f"./perturbed_xlmr_ood_confusion_matrix_at_{threshold}_threshold.png")                    
+            if threshold == 0.01 or threshold == 0.10:
+                # report = classification_report(test_labels, preds, target_names=["NOT OOD", "OOD"], output_dict=True, zero_division=1)
+                # report_df = pd.DataFrame(report).transpose()
+                # print(report)
+                # report_df.to_csv(f"./perturbed_xlmr_ood_classification_report_{threshold}_threshold.csv")
+                ood_gt = []
+                ood_preds = []
+                for pred, gt in zip(preds, test_labels):
+                    ood_gt.append(1)
+                    if pred == gt:
+                        ood_preds.append(1)
+                    else:
+                        ood_preds.append(0)
+
+                ood_labels = set(ood_preds)
+                if self.config.error_analysis:
+                    self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
+                    get_intent_classification_report(ood_preds, ood_gt, ood_labels)
+                    plot_confusion_matrix(ood_preds, ood_gt, ood_labels)
+                    get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels, self.multilingual_idx2label, language, tokenizer=tokenizer)
+                    # cm = confusion_matrix(test_labels, preds)
+                    # disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                    #               display_labels=["NOT OOD", "OOD"])
+                    # disp.plot(xticks_rotation='vertical')
+                    # plt.tight_layout()
+                    # plt.show()
+                    # plt.savefig(f"./perturbed_xlmr_ood_confusion_matrix_at_{threshold}_threshold.png")                    
 
             # acc = accuracy_score(test_labels, preds)
             # prec = precision_score(test_labels, preds, zero_division=1)
