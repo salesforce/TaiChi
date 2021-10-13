@@ -648,7 +648,14 @@ class USLP(object):
                     else:
                         misclassified.append((utterance, "OOD", pred))
                         
-
+            ood_gt = []
+            ood_preds = []
+            for pred, gt in zip(preds, test_labels):
+                ood_gt.append(1)
+                if pred == gt:
+                    ood_preds.append(1)
+                else:
+                    ood_preds.append(0)
             # save classification report and confusion matrix plots for 0.01 and 0.10 thresholds
 
             if threshold == 0.01 or threshold == 0.10:
@@ -656,14 +663,14 @@ class USLP(object):
                 # report_df = pd.DataFrame(report).transpose()
                 # print(report)
                 # report_df.to_csv(f"./perturbed_xlmr_ood_classification_report_{threshold}_threshold.csv")
-                ood_gt = []
-                ood_preds = []
-                for pred, gt in zip(preds, test_labels):
-                    ood_gt.append(1)
-                    if pred == gt:
-                        ood_preds.append(1)
-                    else:
-                        ood_preds.append(0)
+                #  ood_gt = []
+                # ood_preds = []
+                # for pred, gt in zip(preds, test_labels):
+                    # ood_gt.append(1)
+                    # if pred == gt:
+                        # ood_preds.append(1)
+                    # else:
+                        # ood_preds.append(0)
 
                 ood_labels = set(ood_preds)
                 if self.config.error_analysis:
