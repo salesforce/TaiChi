@@ -114,14 +114,14 @@ def get_intent_classification_report(preds, test_labels, unique_labels, save_pat
 
 def get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels, multilingual_idx2label, language, tokenizer=None, save_path='./misclassified_examples.csv'):
     if tokenizer == None:
-    	tokenizer = AutoTokenizer.from_pretrained("xlm-roberta-base")
+        tokenizer = AutoTokenizer.from_pretrained("xlm-roberta-base")
 
-	# decode all examples to find misclassified examples
-	decoded_inputs = []
-	for i, test_label in enumerate(test_labels):
-		decoded_input = tokenizer.decode(encoded_inputs[len(unique_labels) * i + test_label], skip_special_tokens=False)
-		decoded_input = re.split("<s>|</s>", decoded_input)[1].strip()
-		decoded_inputs.append(decoded_input)
+    # decode all examples to find misclassified examples
+    decoded_inputs = []
+    for i, test_label in enumerate(test_labels):
+        decoded_input = tokenizer.decode(encoded_inputs[len(unique_labels) * i + test_label], skip_special_tokens=False)
+        decoded_input = re.split("<s>|</s>", decoded_input)[1].strip()
+        decoded_inputs.append(decoded_input)
 
     # detect misclassified examples
     misclassified = []
@@ -134,4 +134,3 @@ def get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels,
 
     misclassified_df = pd.DataFrame.from_records(misclassified, columns=['utterance', 'prediction', 'ground_truth'])
     misclassified_df.to_csv(save_path)
-	
