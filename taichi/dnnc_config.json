@@ -7,7 +7,7 @@
     "layerdrop": false,
     "learning_rate": 5e-05,
     "no_cuda": false,
-    "num_train_epochs": 10,
+    "num_train_epochs": 1,
     "pretrained_model_path": "/export/share/jqu/few_shot-236-assets/minilm_nli/",
     "save_result_fp": "/export/home/sharvin-scratchpad/taichi-internal/results/dnnc_airlines_10-shot_en_US_inference.json",
     "saved_model_path": "/export/home/sharvin-scratchpad/taichi-internal/model",
@@ -16,5 +16,6 @@
     "train_batch_size": 32,
     "transform_labels": false,
     "warmup_proportion": 0.1,
-    "weight_decay": 0.0001
+    "weight_decay": 0.0001,
+    "error_analysis": true
 }
