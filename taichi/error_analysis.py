@@ -116,7 +116,7 @@ class ErrorAnalysis(object):
 
 
     def save_intent_classification_report(self, preds, test_labels, unique_labels, save_path="./intent_classification_report.csv"):
-        report_df = self.get_intent_classification_report(preds, test_labels, unique_labels, save_path="./intent_classification_report.csv")       
+        report_df = self.get_intent_classification_report(preds, test_labels, unique_labels)       
         report_df.to_csv(save_path)
 
 
