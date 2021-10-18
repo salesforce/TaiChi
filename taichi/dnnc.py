@@ -20,15 +20,26 @@ from transformers import (
 )
 
 
+from sklearn.preprocessing import label_binarize
 from sklearn.metrics import (
     classification_report,
     f1_score,
     accuracy_score,
     precision_score,
     recall_score,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+    roc_curve,
+    RocCurveDisplay,
+    precision_recall_curve,
+    average_precision_score,
+    PrecisionRecallDisplay,
 )
 
 import copy
+
+from taichi.error_analysis import ErrorAnalysis
+
 from taichi.layerdrop import LayerDropModuleList
 
 
@@ -163,11 +174,14 @@ class DNNC(object):
             lang2label[language] = sorted(list(set(lang_df.label)))
         
         multilingual_label2idx = {}
+        self.multilingual_idx2label = {}        
         for language, labels in lang2label.items():
             if language not in multilingual_label2idx:
                 multilingual_label2idx[language] = {}
+                self.multilingual_idx2label[language] = {}
                 for index, label in enumerate(labels):
                     multilingual_label2idx[language][label] = index
+                    self.multilingual_idx2label[language][index] = label
 
         self.train_label_ids = [multilingual_label2idx[lang][lbl] for lbl, lang in zip(self.train_labels, self.train_languages)]
         # get unique labels and make sure the order stays consistent by sorting
@@ -262,6 +276,9 @@ class DNNC(object):
                 self.ood_test_data.append(line[0])
 
         self.model = AutoModelForSequenceClassification.from_pretrained(config.pretrained_model_path)
+
+        if config.error_analysis:
+            self.ea = ErrorAnalysis()
 
 
     def train(self):
@@ -363,9 +380,12 @@ class DNNC(object):
         if config.transform_labels:
             unique_labels = [str(multilingual_label2idx[language][l]) for l in self.unique_test_labels[language]]
 
-        res_indomain, prob_indomain = self._evaluation_indomain(model, self.test_data, self.test_label_ids, self.tokenizer, self.train_data, self.train_label_ids, self.device)
+        res_indomain, prob_indomain = self._evaluation_indomain(model, language, self.test_data, self.test_label_ids, 
+                                                                self.tokenizer, self.train_data, self.train_label_ids, 
+                                                                unique_labels, self.device)
         logger.info(f"in-domain eval: {res_indomain[1]}")
-        res_ood, prob_ood = self._evaluation_ood(model, self.ood_test_data, self.tokenizer, self.train_data, self.device)
+        res_ood, prob_ood = self._evaluation_ood(model, language, self.ood_test_data, self.tokenizer, self.train_data, 
+                                                unique_labels, self.device)
         logger.info(f"ood eval: {res_ood[1]}")
         logger.info("***"*6)
 
@@ -399,9 +419,10 @@ class DNNC(object):
         return data, labels, languages    
 
 
-    def _evaluation_indomain(self, model, test_data, test_labels, tokenizer, train_data, train_labels, device, eval_batch_size=128):
+    def _evaluation_indomain(self, model, language, test_data, test_labels, tokenizer, train_data, 
+                            train_labels, unique_labels, device, eval_batch_size=128):
         model.eval()
-        unique_labels = self.unique_test_labels
+
         test_data_in_nli_format = []
         test_labels_in_nli_format = []
         for i, sample1 in enumerate(test_data):
@@ -420,9 +441,13 @@ class DNNC(object):
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
+        encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
                 input_ids, attention_mask = batch
+                if self.config.error_analysis:
+                    for i, input_id in enumerate(input_ids):
+                        encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
                 logits = model(input_ids = input_ids, attention_mask = attention_mask)[0]
@@ -435,6 +460,11 @@ class DNNC(object):
         preds = np.reshape(preds, (-1, len(train_data), 2))
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
+
+        if self.config.error_analysis:
+            self.ea.save_pr_curve_plot(preds, test_labels, unique_labels)
+
+
         res = []
         for threshold in np.arange(0.0, .91, 0.01):
             preds = []
@@ -443,6 +473,14 @@ class DNNC(object):
                     preds.append(train_labels[pred_label])
                 else:
                     preds.append(len(unique_labels))
+
+                if threshold == 0.01:
+                    if self.config.error_analysis:
+                        # default save path used here, set own path by assigning custom save_path argument
+                        self.ea.save_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels, 
+                                                            self.multilingual_idx2label, language, tokenizer=tokenizer)
+                        self.ea.save_intent_classification_report(preds, test_labels, unique_labels)
+                        self.ea.save_confusion_matrix_plot(preds, test_labels, unique_labels)    
 
             acc = accuracy_score(test_labels, preds)
             prec = precision_score(test_labels, preds, average='macro', zero_division=1)
@@ -453,8 +491,9 @@ class DNNC(object):
 
 
     
-    def _evaluation_ood(self, model, ood_test_data, tokenizer, train_data, device, total_intents=40, eval_batch_size=128):
-        test_labels = [1 for _ in ood_test_data]
+    def _evaluation_ood(self, model, language, ood_test_data, tokenizer, train_data, unique_labels, device, eval_batch_size=128):
+        
+        test_labels = [len(unique_labels) for _ in ood_test_data]
         model.eval()
         
         test_data_in_nli_format = []
@@ -471,9 +510,13 @@ class DNNC(object):
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
+        encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
                 input_ids, attention_mask = batch
+                if self.config.error_analysis:
+                    for i, input_id in enumerate(input_ids):
+                        encoded_inputs.append(input_id)                
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
                 logits = model(input_ids = input_ids, attention_mask = attention_mask)[0]
@@ -490,11 +533,29 @@ class DNNC(object):
         res = []
         for threshold in np.arange(0, .91, 0.01):
             preds = []
+            ood_preds = []
+            ood_gt = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
+                ood_gt.append(1)
                 if prob > threshold:
-                    preds.append(0)
+                    preds.append(pred_label)
+                    ood_preds.append(0)
                 else:
-                    preds.append(1)
+                    preds.append(len(unique_labels)-1)
+                    ood_preds.append(1)
+
+
+            if threshold == 0.01:
+
+                ood_labels = ["NOT OOD", "OOD"]
+                if self.config.error_analysis:
+                    self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
+                    self.ea.save_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels[:-1], 
+                                                        self.multilingual_idx2label, language, tokenizer=tokenizer, 
+                                                        save_path="./ood_misclassified_samples.csv")
+                    self.ea.save_intent_classification_report(ood_preds, ood_gt, ood_labels, save_path="./ood_report.csv")
+                    self.ea.save_confusion_matrix_plot(ood_preds, ood_gt, ood_labels, save_path="./ood_confusion_matrix")        
+
             # acc = accuracy_score(test_labels, preds)
             # prec = precision_score(test_labels, preds, zero_division=1)
             recall = recall_score(test_labels, preds, zero_division=1)

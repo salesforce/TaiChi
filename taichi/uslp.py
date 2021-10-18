@@ -40,11 +40,7 @@ import matplotlib.pyplot as plt
 
 import copy
 
-from taichi.error_analysis import (
-    plot_pr_curve,
-    plot_confusion_matrix,
-    get_intent_classification_report,
-    get_misclassified_samples)
+from taichi.error_analysis import ErrorAnalysis
 
 from taichi.layerdrop import LayerDropModuleList
 
@@ -261,6 +257,8 @@ class USLP(object):
                 self.ood_test_data.append(line[0])
 
         self.model = AutoModelForSequenceClassification.from_pretrained(config.pretrained_model_path)
+        if config.error_analysis:
+            self.ea = ErrorAnalysis()
 
 
     def train(self):
@@ -362,7 +360,8 @@ class USLP(object):
         if config.transform_labels:
             unique_labels = [str(multilingual_label2idx[language][l]) for l in self.unique_test_labels[language]]
 
-        res_indomain, prob_indomain = self._evaluation_indomain(model, language, self.test_data, self.test_label_ids, self.tokenizer, unique_labels, self.device)
+        res_indomain, prob_indomain = self._evaluation_indomain(model, language, self.test_data, self.test_label_ids, 
+                                                                self.tokenizer, unique_labels, self.device)
         logger.info(f"in-domain eval at 0.01 threshold: {res_indomain[1]}")
        
         res_ood, prob_ood = self._evaluation_ood(model, language, self.ood_test_data, self.tokenizer, unique_labels, self.device)
@@ -438,7 +437,7 @@ class USLP(object):
         max_prob = np.max(preds[:, :,0], axis=1)
 
         if self.config.error_analysis:
-            plot_pr_curve(preds, test_labels, unique_labels)
+            self.ea.save_pr_curve_plot(preds, test_labels, unique_labels)
 
         res = []
         for threshold in np.arange(0, .91, 0.01):
@@ -454,9 +453,11 @@ class USLP(object):
             # save classification report and confusion matrix plots for 0.01 and 0.10 thresholds
             if threshold == 0.01:
                 if self.config.error_analysis:
-                    get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels, self.multilingual_idx2label, language, tokenizer=tokenizer)
-                    get_intent_classification_report(preds, test_labels, unique_labels)
-                    plot_confusion_matrix(preds, test_labels, unique_labels)
+                    # default save path used here, set own path by assigning custom save_path argument
+                    self.ea.save_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels, 
+                                                        self.multilingual_idx2label, language, tokenizer=tokenizer)
+                    self.ea.save_intent_classification_report(preds, test_labels, unique_labels)
+                    self.ea.save_confusion_matrix_plot(preds, test_labels, unique_labels)
 
 
 
@@ -490,8 +491,9 @@ class USLP(object):
         with torch.no_grad():
             for batch in tqdm(dataloader):
                 input_ids, attention_mask = batch
-                for input_id in input_ids:
-                    encoded_inputs.append(input_id)
+                if self.config.error_analysis:
+                    for i, input_id in enumerate(input_ids):
+                        encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
                 logits = model(input_ids = input_ids, attention_mask = attention_mask)[0]
@@ -525,9 +527,11 @@ class USLP(object):
                 ood_labels = ["NOT OOD", "OOD"]
                 if self.config.error_analysis:
                     self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
-                    get_misclassified_samples(encoded_inputs, preds, test_labels, unique_labels[:-1], self.multilingual_idx2label, language, tokenizer=tokenizer, save_path="./ood_misclassified_samples.csv")
-                    get_intent_classification_report(ood_preds, ood_gt, ood_labels, save_path="./ood_report.csv")
-                    plot_confusion_matrix(ood_preds, ood_gt, ood_labels, save_path="./ood_confusion_matrix")
+                    self.ea.save_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels[:-1], 
+                                                        self.multilingual_idx2label, language, tokenizer=tokenizer, 
+                                                        save_path="./ood_misclassified_samples.csv")
+                    self.ea.save_intent_classification_report(ood_preds, ood_gt, ood_labels, save_path="./ood_report.csv")
+                    self.ea.save_confusion_matrix_plot(ood_preds, ood_gt, ood_labels, save_path="./ood_confusion_matrix")
             
 
             # acc = accuracy_score(test_labels, preds)
