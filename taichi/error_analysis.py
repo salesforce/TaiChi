@@ -121,7 +121,7 @@ class ErrorAnalysis(object):
 
 
     def get_misclassified_instances(self, encoded_inputs, preds, test_labels, unique_labels, 
-                                    multilingual_idx2label, language, tokenizer=None):
+                                    multilingual_idx2label, language, tokenizer=None, train_labels=None):
         if tokenizer == None:
             tokenizer = AutoTokenizer.from_pretrained("xlm-roberta-base")
 
@@ -135,11 +135,18 @@ class ErrorAnalysis(object):
         # detect misclassified examples
         misclassified = []
         for pred, test_label, utterance in zip(preds, test_labels, decoded_inputs):
-            if pred != test_label:
-                if pred != len(unique_labels):
-                    misclassified.append((utterance, multilingual_idx2label[language][pred], multilingual_idx2label[language][test_label]))
-                else:
-                    misclassified.append((utterance, "OOD", multilingual_idx2label[language][test_label]))
+            if not train_labels:
+                if pred != test_label:
+                    if pred != len(unique_labels):
+                        misclassified.append((utterance, multilingual_idx2label[language][pred], multilingual_idx2label[language][test_label]))
+                    else:
+                        misclassified.append((utterance, "OOD", multilingual_idx2label[language][test_label]))
+            else:
+                if train_labels[pred] != test_label:
+                    if train_labels[pred] != len(unique_labels):
+                        misclassified.append((utterance, multilingual_idx2label[language][train_labels[pred]], multilingual_idx2label[language][test_label]))
+                    else:
+                        misclassified.append((utterance, "OOD", multilingual_idx2label[language][test_label]))                            
 
         misclassified_df = pd.DataFrame.from_records(misclassified, columns=['utterance', 'prediction', 'ground_truth'])
         return misclassified_df

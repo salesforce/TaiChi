@@ -550,7 +550,8 @@ class DNNC(object):
                 if self.config.error_analysis:
                     self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
                     self.ea.save_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels[:-1], 
-                                                        self.multilingual_idx2label, language, tokenizer=tokenizer, 
+                                                        self.multilingual_idx2label, language, tokenizer=tokenizer,
+                                                        train_labels=self.train_label_ids, 
                                                         save_path="./ood_misclassified_samples.csv")
                     self.ea.save_intent_classification_report(ood_preds, ood_gt, ood_labels, save_path="./ood_report.csv")
                     self.ea.save_confusion_matrix_plot(ood_preds, ood_gt, ood_labels, save_path="./ood_confusion_matrix")        
