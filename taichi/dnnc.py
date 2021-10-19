@@ -456,13 +456,12 @@ class DNNC(object):
                     preds = pred
                 else:
                     preds = np.concatenate((preds, pred))
-                    
         preds = np.reshape(preds, (-1, len(train_data), 2))
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
 
-        if self.config.error_analysis:
-            self.ea.save_pr_curve_plot(preds, test_labels, unique_labels)
+        #if self.config.error_analysis:
+            #self.ea.save_pr_curve_plot(preds, test_labels, unique_labels)
 
 
         res = []
@@ -474,13 +473,13 @@ class DNNC(object):
                 else:
                     preds.append(len(unique_labels))
 
-                if threshold == 0.01:
-                    if self.config.error_analysis:
-                        # default save path used here, set own path by assigning custom save_path argument
-                        self.ea.save_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels, 
-                                                            self.multilingual_idx2label, language, tokenizer=tokenizer)
-                        self.ea.save_intent_classification_report(preds, test_labels, unique_labels)
-                        self.ea.save_confusion_matrix_plot(preds, test_labels, unique_labels)    
+            if threshold == 0.01:
+                if self.config.error_analysis:
+                    # default save path used here, set own path by assigning custom save_path argument
+                    self.ea.save_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels, 
+                                                        self.multilingual_idx2label, language, tokenizer=tokenizer)
+                    self.ea.save_intent_classification_report(preds, test_labels, unique_labels)
+                    self.ea.save_confusion_matrix_plot(preds, test_labels, unique_labels)    
 
             acc = accuracy_score(test_labels, preds)
             prec = precision_score(test_labels, preds, average='macro', zero_division=1)
@@ -558,7 +557,7 @@ class DNNC(object):
 
             # acc = accuracy_score(test_labels, preds)
             # prec = precision_score(test_labels, preds, zero_division=1)
-            recall = recall_score(test_labels, preds, zero_division=1)
+            recall = recall_score(ood_gt, ood_preds, zero_division=1)
             # f1 = f1_score(test_labels, preds, zero_division=1)
             res.append((threshold, recall))
         return res, max_prob    
