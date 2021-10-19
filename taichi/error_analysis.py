@@ -153,9 +153,10 @@ class ErrorAnalysis(object):
 
 
     def save_misclassified_instances(self, encoded_inputs, preds, test_labels, unique_labels, 
-                                    multilingual_idx2label, language, tokenizer=None, 
+                                    multilingual_idx2label, language, tokenizer=None, train_labels=None,
                                     save_path='./misclassified_examples.csv'):
 
         misclassified_df = self.get_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels, 
-                                                            multilingual_idx2label, language, tokenizer=None)
+                                                            multilingual_idx2label, language, tokenizer=None,
+                                                            train_labels=train_labels)
         misclassified_df.to_csv(save_path)
