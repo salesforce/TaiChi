@@ -20,7 +20,7 @@ class DataPipeline(object):
         self.raw_data = None
 
 
-    def sample(self, n_shot=None, split='train'):
+    def sample_from_json(self, n_shot=None, split='train'):
 
         with open(self.data_path, 'r') as input_json:
             self.raw_data = json.load(input_json)
@@ -32,15 +32,15 @@ class DataPipeline(object):
         df = df[cols]
         examples_per_class = dict(Counter((df.label)))
         minimum_examples_per_class = min(examples_per_class.values())
-        if minimum_examples_per_class <= n_shot:
+        if minimum_examples_per_class >= n_shot:
             subsampled_df = df.groupby('label').sample(n=n_shot, random_state=0)
             return subsampled_df
         else:
             error_message = "number of examples per class are not enough to sample based on n_shot={} value".format(n_shot)
-            return error_message
+            raise Exception(error_message)
 
 
-    def save_subsampled_data(self, save_dir, n_shot=None, split='train'):
+    def save_subsampled_data_to_csv(self, save_dir, n_shot=None, split='train'):
         subsampled_df = self.sample(n_shot=n_shot, split=split)
         save_path = os.path.join(save_dir, self.name + '_' + str(n_shot) + 
                                 '_shot_' + split + '.csv')
