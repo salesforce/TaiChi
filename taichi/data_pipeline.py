@@ -13,7 +13,7 @@ import os
 from collections import Counter
 
 class DataPipeline(object):
-    def __init__(self, name, data_path, language):
+    def __init__(self, name, data_path, language='en_US'):
         self.name = name
         self.data_path = data_path
         self.language = language
