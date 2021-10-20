@@ -13,9 +13,10 @@ import os
 from collections import Counter
 
 class DataPipeline(object):
-    def __init__(self, name, data_path):
+    def __init__(self, name, data_path, language):
         self.name = name
         self.data_path = data_path
+        self.language = language
         self.raw_data = None
 
 
@@ -25,7 +26,7 @@ class DataPipeline(object):
             self.raw_data = json.load(input_json)
 
         df = pd.DataFrame.from_records(self.raw_data[split], columns=['utterance', 'label'])
-        df['language'] = 'en_US' # for clinc150, how to do for other languages?
+        df['language'] = self.language # for clinc150, how to do for other languages?
         cols = list(df.columns)
         cols = cols[:1] + [cols[-1]] + cols[1:-1]
         df = df[cols]
