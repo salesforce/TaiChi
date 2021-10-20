@@ -13,6 +13,11 @@ import os
 from collections import Counter
 
 class DataPipeline(object):
+    """
+    expects path with csv or json files to process and sample them
+    default language set is english with the onus on user to change 
+    the language in case of working with a different language
+    """
     def __init__(self, name, data_path, language='en_US'):
         self.name = name
         self.data_path = data_path
@@ -21,7 +26,15 @@ class DataPipeline(object):
 
 
     def sample_from_json(self, n_shot=None, split='train'):
-
+        """
+        expects a file in json format as follows:
+        {split: list(list containing utterance and label)}
+        
+        Example:
+        {'train':[[utterance1, label1], [utterance2, label2], ... 'test':[[...]]}
+        
+        returns a subsampled pandas dataframe with utterance, language and label columns
+        """
         with open(self.data_path, 'r') as input_json:
             self.raw_data = json.load(input_json)
 
@@ -41,7 +54,12 @@ class DataPipeline(object):
 
 
     def save_subsampled_data_to_csv(self, save_dir, n_shot=None, split='train'):
-        subsampled_df = self.sample(n_shot=n_shot, split=split)
+        """
+        saves the subsampled data from json into csv with utterance,
+        language and label columns with no headers and no index in the requisite
+        save directory
+        """
+        subsampled_df = self.sample_from_json(n_shot=n_shot, split=split)
         save_path = os.path.join(save_dir, self.name + '_' + str(n_shot) + 
                                 '_shot_' + split + '.csv')
         subsampled_df.to_csv(save_path, header=None, index=None)
