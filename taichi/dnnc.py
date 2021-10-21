@@ -159,7 +159,7 @@ class DNNC(object):
 
         # train_dataloader
         #train_data, train_labels, train_languages = self._load_data_from_csv(os.path.join(config.data_dir, "aggregated_appen.csv"))
-        aggregated_data_df = pd.read_csv(os.path.join(config.data_dir, "train.csv"), names=['utterance', 'language', 'label'])
+        aggregated_data_df = pd.read_csv(config.train_data_path, names=['utterance', 'language', 'label'])
         self.train_data = list(aggregated_data_df.utterance)
         self.train_labels = list(aggregated_data_df.label)
         self.train_languages = list(aggregated_data_df.language)
@@ -236,7 +236,7 @@ class DNNC(object):
 
         # oos_train_dataloader
         ood_train_data = []
-        with open(os.path.join(config.data_dir, "ood_perturbed_train.csv")) as file:
+        with open(config.ood_train_data_path) as file:
             csv_file = csv.reader(file)
             for line in csv_file:
                 ood_train_data.append(line[0])
@@ -254,7 +254,7 @@ class DNNC(object):
 
         # load test dataloader
         self.test_data, self.test_labels, self.test_languages = [], [], []
-        with open(os.path.join(config.data_dir, "test-en.csv")) as file:
+        with open(config.test_data_path) as file:
             csv_file = csv.reader(file)
             for line in csv_file:
                 self.test_data.append(line[0])
@@ -270,7 +270,7 @@ class DNNC(object):
 
         # load oos test dataloader
         self.ood_test_data = []
-        with open(os.path.join(config.data_dir, "ood_perturbed_test.csv")) as file:
+        with open(config.ood_test_data_path) as file:
             csv_file = csv.reader(file)
             for line in csv_file:
                 self.ood_test_data.append(line[0])
