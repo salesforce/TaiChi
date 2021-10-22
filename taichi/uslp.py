@@ -451,7 +451,7 @@ class USLP(object):
             
 
             # save classification report and confusion matrix plots for 0.01 and 0.10 thresholds
-            if threshold == 0.01:
+            if threshold == self.config.threshold:
                 if self.config.error_analysis:
                     # default save path used here, set own path by assigning custom save_path argument
                     self.ea.save_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels, 
@@ -522,7 +522,7 @@ class USLP(object):
                     ood_preds.append(1)
 
 
-            if threshold == 0.01 or threshold == 0.10:
+            if threshold == self.config.threshold:
 
                 ood_labels = ["NOT OOD", "OOD"]
                 if self.config.error_analysis:
