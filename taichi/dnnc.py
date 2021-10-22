@@ -473,7 +473,7 @@ class DNNC(object):
                 else:
                     preds.append(len(unique_labels))
 
-            if threshold == 0.01:
+            if threshold == self.config.threshold:
                 if self.config.error_analysis:
                     # default save path used here, set own path by assigning custom save_path argument
                     self.ea.save_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels, 
@@ -544,7 +544,7 @@ class DNNC(object):
                     ood_preds.append(1)
 
 
-            if threshold == 0.01:
+            if threshold == self.config.threshold:
 
                 ood_labels = ["NOT OOD", "OOD"]
                 if self.config.error_analysis:
