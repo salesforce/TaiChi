@@ -85,6 +85,7 @@ class DataPipeline(object):
         else:
             subsampled_df = self.sample_from_csv(n_shot=n_shot)
 
+        os.makedirs(save_dir, exist_ok=True)
         save_path = os.path.join(save_dir, self.name + '_' + str(n_shot) + 
                                 '_shot_' + split + '.csv')
         subsampled_df.to_csv(save_path, header=None, index=None)
@@ -101,6 +102,7 @@ class DataPipeline(object):
         else:
             subsampled_df = self.sample_from_csv(n_shot=n_shot)
 
+        os.makedirs(save_dir, exist_ok=True)
         save_path = os.path.join(save_dir, self.name + '_' + str(n_shot) + 
                                 '_shot_' + split + '.json')
         subsampled_df.to_json(save_path, orient='values')        
