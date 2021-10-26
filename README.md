@@ -13,7 +13,7 @@
     git clone git@github.com:clinc/oos-eval.git
     ```
 - You should find the data in json format within the `/data` folder of the repository
-- Please refer to the readme here `https://github.com/clinc/oos-eval` for more information on the dataset
+- Please refer to the [readme](https://github.com/clinc/oos-eval/blob/master/README.md) for more information on the dataset
 
 
 ## How to Use Current Version
