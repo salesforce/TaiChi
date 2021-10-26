@@ -2,14 +2,14 @@
 
 ## How to download CLINC150 dataset
 1. clone the data repository
-  a. HTTPS
-  ```
-  git clone https://github.com/clinc/oos-eval.git
-  ```
-  b. SSH
-  ```
-  git clone git@github.com:clinc/oos-eval.git
-  ```
+    a. HTTPS
+    ```
+    git clone https://github.com/clinc/oos-eval.git
+    ```
+    b. SSH
+    ```
+    git clone git@github.com:clinc/oos-eval.git
+    ```
 2. download repo as zip
 ```
 https://github.com/clinc/oos-eval
