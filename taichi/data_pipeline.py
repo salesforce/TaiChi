@@ -25,7 +25,7 @@ class DataPipeline(object):
         self.raw_data = None
 
 
-    def sample_from_csv(self, n_shot=None):
+    def sample_from_csv(self, n_shot=None, random_state=0):
         """
         expects a file in csv format as follows:
         utterance,language,label (no headers and no index)
@@ -39,14 +39,14 @@ class DataPipeline(object):
         examples_per_class = dict(Counter((df.label)))
         minimum_examples_per_class = min(examples_per_class.values())
         if minimum_examples_per_class >= n_shot:
-            subsampled_df = df.groupby('label').sample(n=n_shot, random_state=0)
+            subsampled_df = df.groupby('label').sample(n=n_shot, random_state=random_state)
             return subsampled_df
         else:
             error_message = "number of examples per class are not enough to sample based on n_shot={} value".format(n_shot)
             raise Exception(error_message)        
 
 
-    def sample_from_json(self, n_shot=None, split='train'):
+    def sample_from_json(self, n_shot=None, split='train', random_state=0):
         """
         expects a file in json format as follows:
         {split: list(list containing utterance and label)}
@@ -67,7 +67,7 @@ class DataPipeline(object):
         examples_per_class = dict(Counter((df.label)))
         minimum_examples_per_class = min(examples_per_class.values())
         if minimum_examples_per_class >= n_shot:
-            subsampled_df = df.groupby('label').sample(n=n_shot, random_state=0)
+            subsampled_df = df.groupby('label').sample(n=n_shot, random_state=random_state)
             return subsampled_df
         else:
             error_message = "number of examples per class are not enough to sample based on n_shot={} value".format(n_shot)
