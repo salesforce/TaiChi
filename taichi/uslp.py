@@ -42,8 +42,6 @@ import copy
 
 from taichi.error_analysis import ErrorAnalysis
 
-from taichi.layerdrop import LayerDropModuleList
-
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO)
@@ -265,8 +263,6 @@ class USLP(object):
         # load pretrained NLI model
         config = self.config
         model = self.model
-        if config.layerdrop:
-            model.roberta = self._enable_layer_drop(model.roberta, config.layerdrop_prob)
         if config.freeze_embedding:
             for p in model.roberta.embeddings.parameters():
                 p.requires_grad = False
@@ -540,20 +536,3 @@ class USLP(object):
             # f1 = f1_score(test_labels, preds, zero_division=1)
             res.append((threshold, recall))
         return res, max_prob    
-
-    def _enable_layer_drop(self, bert, p, max_layer_idx=11):
-        new_layers = LayerDropModuleList(p=p, max_layer_idx=max_layer_idx)
-        module_names = list(bert._modules.keys())
-        if module_names[1] == "encoder":
-            for layer_idx in range(len(bert.encoder.layer)):
-                new_layers.append(bert.encoder.layer[layer_idx])
-            new_bert = copy.deepcopy(bert)
-            bert.encoder.layer = new_layers
-        elif module_names[1] == "transformer":
-            for layer_idx in range(len(bert.transformer.layer)):
-                new_layers.append(bert.transformer.layer[layer_idx])
-            new_bert = copy.deepcopy(bert)
-            bert.transformer.layer = new_layers
-        else:
-            raise Exception("invalid module name!")
-        return bert
