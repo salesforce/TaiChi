@@ -1,7 +1,7 @@
 # taichi-internal
 
 ## How to download CLINC150 dataset
-1. clone the data repository
+- clone the data repository
 
 
     a. HTTPS
@@ -12,11 +12,8 @@
     ```
     git clone git@github.com:clinc/oos-eval.git
     ```
-2. download repo as zip
-```
-https://github.com/clinc/oos-eval
-```
-- you should find the data in json format within the `/data` folder of the repository
+- You should find the data in json format within the `/data` folder of the repository
+- Please refer to the readme here `https://github.com/clinc/oos-eval` for more information on the dataset
 
 
 ## How to Use Current Version
