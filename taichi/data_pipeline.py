@@ -74,16 +74,16 @@ class DataPipeline(object):
             raise Exception(error_message)
 
 
-    def save_subsampled_data_to_csv(self, save_dir, n_shot=None, split='train', is_json=False):
+    def save_subsampled_data_to_csv(self, save_dir, n_shot=None, split='train', is_json=False, random_state=0):
         """
         saves the subsampled data from csv/json into csv with utterance,
         language and label columns with no headers and no index in the requisite
         save directory
         """
         if is_json:
-            subsampled_df = self.sample_from_json(n_shot=n_shot, split=split)
+            subsampled_df = self.sample_from_json(n_shot=n_shot, split=split, random_state=random_state)
         else:
-            subsampled_df = self.sample_from_csv(n_shot=n_shot)
+            subsampled_df = self.sample_from_csv(n_shot=n_shot, random_state=random_state)
 
         os.makedirs(save_dir, exist_ok=True)
         save_path = os.path.join(save_dir, self.name + '_' + str(n_shot) + 
@@ -91,16 +91,16 @@ class DataPipeline(object):
         subsampled_df.to_csv(save_path, header=None, index=None)
 
 
-    def save_subsampled_data_to_json(self, save_dir, n_shot=None, split='train', is_json=False):
+    def save_subsampled_data_to_json(self, save_dir, n_shot=None, split='train', is_json=False, random_state=0):
         """
         saves the subsampled data from csv/json into json with individual utterance,
         language and label values as an independent array in the requisite
         save directory
         """
         if is_json:
-            subsampled_df = self.sample_from_json(n_shot=n_shot, split=split)
+            subsampled_df = self.sample_from_json(n_shot=n_shot, split=split, random_state=random_state)
         else:
-            subsampled_df = self.sample_from_csv(n_shot=n_shot)
+            subsampled_df = self.sample_from_csv(n_shot=n_shot, random_state=random_state)
 
         os.makedirs(save_dir, exist_ok=True)
         save_path = os.path.join(save_dir, self.name + '_' + str(n_shot) + 
