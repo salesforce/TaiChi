@@ -34,16 +34,21 @@ class DataPipeline(object):
         book a ticket from San Francisco to New York,en_US,Book a Flight
         
         returns a subsampled pandas dataframe with utterance, language and label columns
-        """        
+        if no n_shot provided, just returns the dataframe as is
+        """
         df = pd.read_csv(self.data_path, names=['utterance', 'language', 'label'])
-        examples_per_class = dict(Counter((df.label)))
-        minimum_examples_per_class = min(examples_per_class.values())
-        if minimum_examples_per_class >= n_shot:
-            subsampled_df = df.groupby('label').sample(n=n_shot, random_state=random_state)
-            return subsampled_df
+        self.raw_data = df
+        if n_shot is not None:
+            examples_per_class = dict(Counter((df.label)))
+            minimum_examples_per_class = min(examples_per_class.values())
+            if minimum_examples_per_class >= n_shot:
+                subsampled_df = df.groupby('label').sample(n=n_shot, random_state=random_state)
+                return subsampled_df
+            else:
+                error_message = "number of examples per class are not enough to sample based on n_shot={} value".format(n_shot)
+                raise Exception(error_message)
         else:
-            error_message = "number of examples per class are not enough to sample based on n_shot={} value".format(n_shot)
-            raise Exception(error_message)        
+            return df
 
 
     def sample_from_json(self, n_shot=None, split='train', random_state=0):
@@ -58,20 +63,27 @@ class DataPipeline(object):
         """
         with open(self.data_path, 'r') as input_json:
             self.raw_data = json.load(input_json)
-
-        df = pd.DataFrame.from_records(self.raw_data[split], columns=['utterance', 'label'])
+        try:
+            df = pd.DataFrame.from_records(self.raw_data[split], columns=['utterance', 'label'])
+        except KeyError as default_error:
+            error_message = "split {} not found, please select among the existing splits that exist: {}".format(split,list(self.raw_data.keys()))
+            raise Exception(error_message)
+            
         df['language'] = self.language # for clinc150, how to do for other languages?
         cols = list(df.columns)
         cols = cols[:1] + [cols[-1]] + cols[1:-1]
         df = df[cols]
-        examples_per_class = dict(Counter((df.label)))
-        minimum_examples_per_class = min(examples_per_class.values())
-        if minimum_examples_per_class >= n_shot:
-            subsampled_df = df.groupby('label').sample(n=n_shot, random_state=random_state)
-            return subsampled_df
+        if n_shot is not None:
+            examples_per_class = dict(Counter((df.label)))
+            minimum_examples_per_class = min(examples_per_class.values())
+            if minimum_examples_per_class >= n_shot:
+                subsampled_df = df.groupby('label').sample(n=n_shot, random_state=random_state)
+                return subsampled_df
+            else:
+                error_message = "number of examples per class are not enough to sample based on n_shot={} value".format(n_shot)
+                raise Exception(error_message)
         else:
-            error_message = "number of examples per class are not enough to sample based on n_shot={} value".format(n_shot)
-            raise Exception(error_message)
+            return df
 
 
     def save_subsampled_data_to_csv(self, save_dir, n_shot=None, split='train', is_json=False, random_state=0):
