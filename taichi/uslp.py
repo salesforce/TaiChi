@@ -256,7 +256,7 @@ class USLP(object):
 
         self.model = AutoModelForSequenceClassification.from_pretrained(config.pretrained_model_path)
         if config.error_analysis:
-            self.ea = ErrorAnalysis()
+            self.ea = ErrorAnalysis(config.error_analysis_dir)
 
 
     def train(self):
@@ -525,9 +525,9 @@ class USLP(object):
                     self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
                     self.ea.save_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels[:-1], 
                                                         self.multilingual_idx2label, language, tokenizer=tokenizer, 
-                                                        save_path="./ood_misclassified_samples.csv")
-                    self.ea.save_intent_classification_report(ood_preds, ood_gt, ood_labels, save_path="./ood_report.csv")
-                    self.ea.save_confusion_matrix_plot(ood_preds, ood_gt, ood_labels, save_path="./ood_confusion_matrix")
+                                                        save_filename="ood_misclassified_samples.csv")
+                    self.ea.save_intent_classification_report(ood_preds, ood_gt, ood_labels, save_filename="ood_report.csv")
+                    self.ea.save_confusion_matrix_plot(ood_preds, ood_gt, ood_labels, save_filename="ood_confusion_matrix")
             
 
             # acc = accuracy_score(test_labels, preds)

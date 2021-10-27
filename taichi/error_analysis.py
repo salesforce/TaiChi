@@ -13,6 +13,7 @@ from sklearn.metrics import (
     PrecisionRecallDisplay,
 )
 
+import os
 import re
 
 import matplotlib.pyplot as plt
@@ -20,9 +21,11 @@ import matplotlib.pyplot as plt
 
 
 class ErrorAnalysis(object):
+    def __init__(self, save_dir="./error_analysis"):
+        self.save_dir = save_dir
+        os.makedirs(self.save_dir, exist_ok=True)
 
-
-    def save_pr_curve_plot(self, preds, test_labels, unique_labels, save_path="./multiclass-pr-curve.png"):
+    def save_pr_curve_plot(self, preds, test_labels, unique_labels, save_filename="multiclass-pr-curve.png"):
 
         Y_test = label_binarize(test_labels, classes=range(len(unique_labels)))
         y_score = preds[:,:,0]
@@ -91,17 +94,18 @@ class ErrorAnalysis(object):
         ax.set_title("Extension of Precision-Recall curve to multi-class")
 
         plt.show()
-
+        save_path = os.path.join(self.save_dir, save_filename)
         plt.savefig(save_path)
 
 
-    def save_confusion_matrix_plot(self, preds, test_labels, unique_labels, save_path="./confusion_matrix.png"):
+    def save_confusion_matrix_plot(self, preds, test_labels, unique_labels, save_filename="confusion_matrix.png"):
         cm = confusion_matrix(test_labels, preds)
         disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                       display_labels=unique_labels)
         disp.plot(xticks_rotation='vertical')
         plt.tight_layout()
         plt.show()
+        save_path = os.path.join(self.save_dir, save_filename)
         plt.savefig(save_path)
 
 
@@ -115,8 +119,9 @@ class ErrorAnalysis(object):
         return report_df
 
 
-    def save_intent_classification_report(self, preds, test_labels, unique_labels, save_path="./intent_classification_report.csv"):
-        report_df = self.get_intent_classification_report(preds, test_labels, unique_labels)       
+    def save_intent_classification_report(self, preds, test_labels, unique_labels, save_filename="intent_classification_report.csv"):
+        report_df = self.get_intent_classification_report(preds, test_labels, unique_labels)
+        save_path = os.path.join(self.save_dir, save_filename)  
         report_df.to_csv(save_path)
 
 
@@ -154,9 +159,10 @@ class ErrorAnalysis(object):
 
     def save_misclassified_instances(self, encoded_inputs, preds, test_labels, unique_labels, 
                                     multilingual_idx2label, language, tokenizer=None, train_labels=None,
-                                    save_path='./misclassified_examples.csv'):
+                                    save_filename='misclassified_examples.csv'):
 
         misclassified_df = self.get_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels, 
                                                             multilingual_idx2label, language, tokenizer=None,
                                                             train_labels=train_labels)
+        save_path = os.path.join(self.save_dir, save_filename)
         misclassified_df.to_csv(save_path)
