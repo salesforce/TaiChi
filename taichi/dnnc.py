@@ -424,10 +424,7 @@ class DNNC(object):
         for i, sample1 in enumerate(test_data):
             for j, sample2 in enumerate(train_data):
                 test_data_in_nli_format.append((sample1, sample2))
-                #if test_labels[i] == train_labels[j]:
-                #    test_labels_in_nli_format.append(1)
-                #else:
-                #    test_labels_in_nli_format.append(0)    
+   
         features = tokenizer(test_data_in_nli_format, 
                             return_tensors="pt", 
                             padding='max_length', 
@@ -455,10 +452,6 @@ class DNNC(object):
         preds = np.reshape(preds, (-1, len(train_data), 2))
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
-
-        #if self.config.error_analysis:
-            #self.ea.save_pr_curve_plot(preds, test_labels, unique_labels)
-
 
         res = []
         for threshold in np.arange(0.0, .91, 0.01):

@@ -241,10 +241,10 @@ class USLP(object):
                 self.test_data.append(line[0])
                 self.test_languages.append(line[1])
                 self.test_labels.append(line[2])
-
+        
         # detect language and assign label2idx for individual languages appropriately
         self.unique_test_labels = lang2label
-        #self.test_labels = [" ".join(l.split("_")).strip() for l in self.test_labels if '_' in l]
+        self.test_labels = [" ".join(l.split("_")).strip() if '_' in l else l for l in self.test_labels]
         self.test_label_ids = [multilingual_label2idx[lang][lbl] for lbl, lang in zip(self.test_labels, self.test_languages)]
 
         # load oos test dataloader
@@ -427,13 +427,10 @@ class USLP(object):
                     preds = pred
                 else:
                     preds = np.concatenate((preds, pred))
-        
+
         preds = np.reshape(preds, (-1, len(unique_labels), 2))
         max_pos_idx = np.argmax(preds[:, :,0], axis=1)
         max_prob = np.max(preds[:, :,0], axis=1)
-
-        if self.config.error_analysis:
-            self.ea.save_pr_curve_plot(preds, test_labels, unique_labels)
 
         res = []
         for threshold in np.arange(0, .91, 0.01):
