@@ -15,7 +15,7 @@
     "saved_model_path": "/export/home/sharvin-scratchpad/taichi-internal/model/roberta-base/dnnc",
     "seed": 42,
     "test_batch_size": 128,
-    "train_batch_size": 128,
+    "train_batch_size": 32,
     "transform_labels": false,
     "warmup_proportion": 0.1,
     "weight_decay": 0.0001,
