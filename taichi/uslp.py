@@ -511,7 +511,7 @@ class USLP(object):
                     preds.append(pred_label)
                     ood_preds.append(0)
                 else:
-                    preds.append(len(unique_labels)-1)
+                    preds.append(len(unique_labels))
                     ood_preds.append(1)
 
 
@@ -519,12 +519,9 @@ class USLP(object):
 
                 ood_labels = ["NOT OOD", "OOD"]
                 if self.config.error_analysis:
-                    self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
-                    self.ea.save_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels[:-1], 
-                                                        self.multilingual_idx2label, language, tokenizer=tokenizer, 
-                                                        save_filename="ood_misclassified_samples.csv")
+                    #self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
                     self.ea.save_intent_classification_report(ood_preds, ood_gt, ood_labels, save_filename="ood_report.csv")
-                    self.ea.save_confusion_matrix_plot(ood_preds, ood_gt, ood_labels, save_filename="ood_confusion_matrix")
+                    self.ea.save_confusion_matrix_plot(ood_preds, ood_gt, ood_labels, save_filename="ood_confusion_matrix.png")
             
 
             # acc = accuracy_score(test_labels, preds)
@@ -532,4 +529,4 @@ class USLP(object):
             recall = recall_score(ood_gt, ood_preds, zero_division=1)
             # f1 = f1_score(test_labels, preds, zero_division=1)
             res.append((threshold, recall))
-        return res, max_prob    
+        return res, max_prob

@@ -375,7 +375,6 @@ class DNNC(object):
         unique_labels = self.unique_test_labels[language]
         if config.transform_labels:
             unique_labels = [str(multilingual_label2idx[language][l]) for l in self.unique_test_labels[language]]
-
         res_indomain, prob_indomain = self._evaluation_indomain(model, language, self.test_data, self.test_label_ids, 
                                                                 self.tokenizer, self.train_data, self.train_label_ids, 
                                                                 unique_labels, self.device)
@@ -424,12 +423,13 @@ class DNNC(object):
         for i, sample1 in enumerate(test_data):
             for j, sample2 in enumerate(train_data):
                 test_data_in_nli_format.append((sample1, sample2))
-   
+        print("appended all data")
         features = tokenizer(test_data_in_nli_format, 
                             return_tensors="pt", 
                             padding='max_length', 
                             max_length=64, 
                             truncation=True)
+        print("features done")
         dataset = TensorDataset(features['input_ids'], features['attention_mask'])
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
@@ -529,7 +529,7 @@ class DNNC(object):
                     preds.append(pred_label)
                     ood_preds.append(0)
                 else:
-                    preds.append(len(unique_labels)-1)
+                    preds.append(len(unique_labels))
                     ood_preds.append(1)
 
 
@@ -537,11 +537,7 @@ class DNNC(object):
 
                 ood_labels = ["NOT OOD", "OOD"]
                 if self.config.error_analysis:
-                    self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
-                    self.ea.save_misclassified_instances(encoded_inputs, preds, test_labels, unique_labels[:-1], 
-                                                        self.multilingual_idx2label, language, tokenizer=tokenizer,
-                                                        train_labels=self.train_label_ids, 
-                                                        save_filename="ood_misclassified_samples.csv")
+                    #self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
                     self.ea.save_intent_classification_report(ood_preds, ood_gt, ood_labels, save_filename="ood_report.csv")
                     self.ea.save_confusion_matrix_plot(ood_preds, ood_gt, ood_labels, save_filename="ood_confusion_matrix")        
 
