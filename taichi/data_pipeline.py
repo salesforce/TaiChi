@@ -100,7 +100,7 @@ class DataPipeline(object):
         subsampled_df.to_csv(save_path, header=None, index=None)
 
 
-    def save_subsampled_data_to_json(self, save_dir, n_shot=None, split='train', is_json=False, random_state=0, save_filename=None):
+    def save_subsampled_data_to_json(self, save_dir, n_shot=None, split='train', is_json=False, random_state=0, orient='values', save_filename=None):
         """
         saves the subsampled data from csv/json into json with individual utterance,
         language and label values as an independent array in the requisite
@@ -114,8 +114,8 @@ class DataPipeline(object):
         os.makedirs(save_dir, exist_ok=True)
         if save_filename is None:
             save_path = os.path.join(save_dir, self.name + '_' + str(n_shot) + 
-                                    '_shot_' + split + '.csv')
+                                    '_shot_' + split + '.json')
         else:
             save_path = os.path.join(save_dir, save_filename)
             
-        subsampled_df.to_json(save_path, orient='values')        
+        subsampled_df.to_json(save_path, orient=orient)        
