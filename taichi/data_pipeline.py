@@ -1,10 +1,3 @@
-"""
-expected input format: clinc150
-likable features for sample class
-1. able to see how many samples per class are there
-2. able to sample them based on the number n
-
-"""
 import pandas as pd
 import json
 import re
