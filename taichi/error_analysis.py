@@ -113,10 +113,6 @@ class ErrorAnalysis(object):
         if len(set(preds)) == len(unique_labels):
             report = classification_report(test_labels, preds, target_names=unique_labels, output_dict=True, zero_division=1)
         else:
-            print(preds)
-            print(len(preds))
-            print(len(unique_labels))
-            print(unique_labels)
             unique_labels += ["OOD"]
             report = classification_report(test_labels, preds, target_names=list(dict.fromkeys(unique_labels)), output_dict=True, zero_division=1)
         report_df = pd.DataFrame(report).transpose()
@@ -137,7 +133,6 @@ class ErrorAnalysis(object):
         # decode all examples to find misclassified examples
         decoded_inputs = []
         for i, test_label in enumerate(test_labels):
-            print(len(unique_labels), i, test_label, len(unique_labels) * i + test_label, len(encoded_inputs))
             decoded_input = tokenizer.decode(encoded_inputs[len(unique_labels) * i], skip_special_tokens=False)
             decoded_input = re.split("<s>|</s>", decoded_input)[1].strip()
             decoded_inputs.append(decoded_input)
