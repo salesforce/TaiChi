@@ -118,7 +118,7 @@ class ErrorAnalysis(object):
             print(len(unique_labels))
             print(unique_labels)
             unique_labels += ["OOD"]
-            report = classification_report(test_labels, preds, target_names=list(set(unique_labels)), output_dict=True, zero_division=1)
+            report = classification_report(test_labels, preds, target_names=list(dict.fromkeys(unique_labels)), output_dict=True, zero_division=1)
         report_df = pd.DataFrame(report).transpose()
         return report_df
 
