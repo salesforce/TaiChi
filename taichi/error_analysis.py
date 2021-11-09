@@ -110,7 +110,7 @@ class ErrorAnalysis(object):
 
 
     def get_intent_classification_report(self, preds, test_labels, unique_labels):
-        if len(set(preds)) == len(unique_labels):
+        if len(unique_labels) not in set(preds):
             report = classification_report(test_labels, preds, target_names=unique_labels, output_dict=True, zero_division=1)
         else:
             unique_labels += ["OOD"]
@@ -128,11 +128,11 @@ class ErrorAnalysis(object):
     def get_misclassified_instances(self, encoded_inputs, preds, test_labels, unique_labels, 
                                     multilingual_idx2label, language, tokenizer=None, train_labels=None):
         if tokenizer == None:
-            tokenizer = AutoTokenizer.from_pretrained("xlm-roberta-base")
+            tokenizer = AutoTokenizer.from_pretrained("roberta-base")
 
         # decode all examples to find misclassified examples
         decoded_inputs = []
-        for i, test_label in enumerate(test_labels):
+        for i,j in enumerate(test_labels):
             decoded_input = tokenizer.decode(encoded_inputs[len(unique_labels) * i], skip_special_tokens=False)
             decoded_input = re.split("<s>|</s>", decoded_input)[1].strip()
             decoded_inputs.append(decoded_input)
