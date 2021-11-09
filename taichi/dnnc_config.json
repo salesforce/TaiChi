@@ -9,7 +9,7 @@
     "gradient_accumulation_steps": 1,
     "learning_rate": 5e-05,
     "no_cuda": false,
-    "num_train_epochs": 100,
+    "num_train_epochs": 200,
     "pretrained_model_path": "/export/share/jqu/taichi-assets/roberta_base_nli_emnlp2021",
     "save_result_fp": "/export/share/sharvin/clinc150_uci/5-shot/dnnc_inference.json",
     "saved_model_path": "/export/home/sharvin-scratchpad/taichi-internal/model/roberta-base/dnnc",
