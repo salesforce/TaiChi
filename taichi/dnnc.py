@@ -97,7 +97,6 @@ class DNNC(object):
         self.tokenizer = AutoTokenizer.from_pretrained(config.bert_model)
 
         # train_dataloader
-        #train_data, train_labels, train_languages = self._load_data_from_csv(os.path.join(config.data_dir, "aggregated_appen.csv"))
         aggregated_data_df = pd.read_csv(config.train_data_path, names=['utterance', 'language', 'label'])
         self.train_data = list(aggregated_data_df.utterance)
         self.train_labels = list(aggregated_data_df.label)
@@ -126,11 +125,7 @@ class DNNC(object):
         # get unique labels and make sure the order stays consistent by sorting
         unique_train_labels = sorted(list(set(self.train_labels)))
 
-
-        # get positive examples with language information to aid with negative examples
-        # positive_train_examples = [(data, label, lang) for data, label, lang in zip(train_data, train_labels, train_languages)]
-
-        # create positive and negativetrain examples - assumes the language throughout is same
+        # create positive and negative train examples - assumes the language throughout is same
         positive_train_examples = []
         negative_train_examples = []
         for i in range(len(self.train_data)):
@@ -144,18 +139,6 @@ class DNNC(object):
 
                 else:
                     negative_train_examples.append((self.train_data[i], self.train_data[j], self.train_languages[i]))
-
-        # # get negative examples keeping language in mind
-        # negative_train_examples = []
-        # for e in positive_train_examples:
-        #     #for l in unique_train_labels:
-        #     for l in lang2label[e[2]]:
-        #         if e[1] != l:
-        #             negative_train_examples.append((e[0], l, e[2]))
-
-        # if config.transform_labels:
-        #     positive_train_examples = [(d[0], str(multilingual_label2idx[d[2]][d[1]])) for d in positive_train_examples]
-        #     negative_train_examples = [(d[0], str(multilingual_label2idx[d[2]][d[1]])) for d in negative_train_examples]
 
         # modify positive and negative examples to remove the language element
         positive_train_examples = [(d[0], d[1]) for d in positive_train_examples]
@@ -343,17 +326,6 @@ class DNNC(object):
 
             with open(config.save_result_fp, 'w') as f:
                 json.dump(final_res, f, indent = 4) 
- 
-    def _load_data_from_csv(self, fp):
-        data, labels, languages = [], [], []
-        with open(fp) as file:
-            csv_file = csv.reader(file)
-            for line in csv_file:
-                data.append(line[0])
-                languages.append(line[1])
-                labels.append(line[2])
-        return data, labels, languages    
-
 
     def _evaluation_indomain(self, model, language, test_data, test_labels, tokenizer, train_data, 
                             train_labels, unique_labels, device, eval_batch_size=128):
@@ -364,13 +336,13 @@ class DNNC(object):
         for i, sample1 in enumerate(test_data):
             for j, sample2 in enumerate(train_data):
                 test_data_in_nli_format.append((sample1, sample2))
-        print("appended all data")
+
         features = tokenizer(test_data_in_nli_format, 
                             return_tensors="pt", 
                             padding='max_length', 
                             max_length=64, 
                             truncation=True)
-        print("features done")
+
         dataset = TensorDataset(features['input_ids'], features['attention_mask'])
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
