@@ -311,7 +311,6 @@ class USLP(object):
         res_ood_precision = [res[1] for res in res_ood_prec_f1] # get precision
         res_ood_f1 = [res[2] for res in res_ood_prec_f1] # get F1 
         res_ood = [(recall[0], recall[1], precision, f1) for recall, precision, f1 in zip(res_ood_recall, res_ood_precision, res_ood_f1)]
-        threshold_index = config.threshold * 100
         logger.info(f"ood eval at {config.threshold} threshold: {res_ood[threshold_index]}")
         logger.info("***"*6)
 
