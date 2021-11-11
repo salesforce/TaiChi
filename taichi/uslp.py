@@ -329,16 +329,6 @@ class USLP(object):
             with open(config.save_result_fp, 'w') as f:
                 json.dump(final_res, f, indent = 4) 
  
-    def _load_data_from_csv(self, fp):
-        data, labels, languages = [], [], []
-        with open(fp) as file:
-            csv_file = csv.reader(file)
-            for line in csv_file:
-                data.append(line[0])
-                labels.append(line[1])
-                languages.append(line[2])
-        return data, labels, languages    
-
 
     def _evaluation_indomain(self, model, language, test_data, test_labels, tokenizer, unique_labels, device, eval_batch_size=128):
         model.eval()
