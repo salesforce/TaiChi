@@ -46,6 +46,10 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+ENTAILMENT = 0
+NON_ENTAILMENT = 1
+
+
 
 class DNNC(object):
     """
@@ -81,7 +85,8 @@ class DNNC(object):
         logger.info('config: {}'.format(config))
 
         # set up device
-        self.device = torch.device("cuda" if torch.cuda.is_available() and not config.no_cuda else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() 
+                                   and not config.no_cuda else "cpu")
 
         logger.info("device: {}".format(self.device))
 
@@ -96,7 +101,8 @@ class DNNC(object):
         self.tokenizer = AutoTokenizer.from_pretrained(config.bert_model)
 
         # train_dataloader
-        aggregated_data_df = pd.read_csv(config.train_data_path, names=['utterance', 'language', 'label'])
+        aggregated_data_df = pd.read_csv(config.train_data_path, 
+                                         names=['utterance', 'language', 'label'])
         self.train_data = list(aggregated_data_df.utterance)
         self.train_labels = list(aggregated_data_df.label)
         self.train_languages = list(aggregated_data_df.language)
@@ -119,7 +125,8 @@ class DNNC(object):
                     multilingual_label2idx[language][label] = index
                     self.multilingual_idx2label[language][index] = label
 
-        self.train_label_ids = [multilingual_label2idx[lang][lbl] for lbl, lang in zip(self.train_labels, self.train_languages)]
+        self.train_label_ids = [multilingual_label2idx[lang][lbl] for lbl, lang 
+                                in zip(self.train_labels, self.train_languages)]
         # get unique labels and make sure the order stays consistent by sorting
         unique_train_labels = sorted(list(set(self.train_labels)))
 
@@ -132,27 +139,47 @@ class DNNC(object):
                     if j <= i:
                         continue
                         
-                    positive_train_examples.append((self.train_data[i], self.train_data[j], self.train_languages[j]))
-                    positive_train_examples.append((self.train_data[j], self.train_data[i], self.train_languages[i]))
+                    positive_train_examples.append((self.train_data[i], 
+                                                    self.train_data[j], 
+                                                    self.train_languages[j]))
+                    
+                    positive_train_examples.append((self.train_data[j], 
+                                                    self.train_data[i], 
+                                                    self.train_languages[i]))
 
                 else:
-                    negative_train_examples.append((self.train_data[i], self.train_data[j], self.train_languages[i]))
+                    negative_train_examples.append((self.train_data[i], 
+                                                    self.train_data[j], 
+                                                    self.train_languages[i]))
 
         # modify positive and negative examples to remove the language element
         positive_train_examples = [(d[0], d[1]) for d in positive_train_examples]
         negative_train_examples = [(d[0], d[1]) for d in negative_train_examples]
 
-        positive_train_features = self.tokenizer(positive_train_examples, return_tensors="pt", padding='max_length', max_length=64, truncation=True)
-        negative_train_features = self.tokenizer(negative_train_examples, return_tensors="pt", padding='max_length', max_length=64, truncation=True)
+        positive_train_features = self.tokenizer(positive_train_examples, return_tensors="pt", 
+                                                 padding='max_length', max_length=config.max_seq_length, 
+                                                 truncation=True)
+        
+        negative_train_features = self.tokenizer(negative_train_examples, return_tensors="pt", 
+                                                 padding='max_length', max_length=config.max_seq_length, 
+                                                 truncation=True)
 
-        positive_train_labels = torch.tensor([0 for _ in positive_train_examples])
-        positive_train_dataset = TensorDataset(positive_train_features['input_ids'], positive_train_features['attention_mask'], positive_train_labels)
+        positive_train_labels = torch.tensor([ENTAILMENT for _ in positive_train_examples])
+        positive_train_dataset = TensorDataset(positive_train_features['input_ids'], 
+                                               positive_train_features['attention_mask'], 
+                                               positive_train_labels)
 
-        negative_train_labels = torch.tensor([1 for _ in negative_train_examples])
-        negative_train_dataset = TensorDataset(negative_train_features['input_ids'], negative_train_features['attention_mask'], negative_train_labels)
+        negative_train_labels = torch.tensor([NON_ENTAILMENT for _ in negative_train_examples])
+        negative_train_dataset = TensorDataset(negative_train_features['input_ids'], 
+                                               negative_train_features['attention_mask'], 
+                                               negative_train_labels)
 
-        self.pos_train_dataloader = DataLoader(positive_train_dataset, batch_size=int(config.train_batch_size//2), shuffle=True)
-        self.neg_train_dataloader = DataLoader(negative_train_dataset, batch_size=config.train_batch_size//4, shuffle=True)
+        self.pos_train_dataloader = DataLoader(positive_train_dataset, 
+                                               batch_size=int(config.train_batch_size//2), 
+                                               shuffle=True)
+        self.neg_train_dataloader = DataLoader(negative_train_dataset, 
+                                               batch_size=config.train_batch_size//4, 
+                                               shuffle=True)
 
         # oos_train_dataloader
         ood_train_data = []
@@ -166,10 +193,16 @@ class DNNC(object):
         for e in ood_train_data:
             for l in self.train_data:
                 ood_train_examples.append((e, l))
-        ood_train_features = self.tokenizer(ood_train_examples, return_tensors="pt", padding='max_length', max_length=64, truncation=True)
+        ood_train_features = self.tokenizer(ood_train_examples, return_tensors="pt", 
+                                            padding='max_length', max_length=config.max_seq_length, 
+                                            truncation=True)
         ood_train_labels = torch.tensor([1 for _ in ood_train_examples])
-        ood_train_dataset = TensorDataset(ood_train_features['input_ids'], ood_train_features['attention_mask'], ood_train_labels)
-        self.ood_train_dataloader = DataLoader(ood_train_dataset, batch_size=config.train_batch_size//4, shuffle=True)
+        ood_train_dataset = TensorDataset(ood_train_features['input_ids'], 
+                                          ood_train_features['attention_mask'], 
+                                          ood_train_labels)
+        self.ood_train_dataloader = DataLoader(ood_train_dataset, 
+                                               batch_size=config.train_batch_size//4, 
+                                               shuffle=True)
 
 
         # load test dataloader
@@ -184,7 +217,8 @@ class DNNC(object):
         # detect language based on assumption that test data would have only one language
     
         self.unique_test_labels = lang2label
-        self.test_label_ids = [multilingual_label2idx[lang][lbl] for lbl, lang in zip(self.test_labels, self.test_languages)]
+        self.test_label_ids = [multilingual_label2idx[lang][lbl] for lbl, lang 
+                               in zip(self.test_labels, self.test_languages)]
 
         # load oos test dataloader
         self.ood_test_data = []
@@ -343,7 +377,7 @@ class DNNC(object):
         features = tokenizer(test_data_in_nli_format, 
                             return_tensors="pt", 
                             padding='max_length', 
-                            max_length=64, 
+                            max_length=self.config.max_seq_length, 
                             truncation=True)
 
         dataset = TensorDataset(features['input_ids'], features['attention_mask'])
@@ -408,7 +442,7 @@ class DNNC(object):
         features = tokenizer(test_data_in_nli_format, 
                             return_tensors="pt", 
                             padding='max_length', 
-                            max_length=64, 
+                            max_length=self.config.max_seq_length, 
                             truncation=True)
         dataset = TensorDataset(features['input_ids'], features['attention_mask'])
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
