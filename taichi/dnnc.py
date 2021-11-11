@@ -298,7 +298,7 @@ class DNNC(object):
                                                                 unique_labels, self.device)
         # compute index to print per threshold entered
         threshold_index = config.threshold * 100 
-        logger.info(f"in-domain eval at {config.threshold}: {res_indomain[theshold_index]}")
+        logger.info(f"in-domain eval at {config.threshold} threshold: {res_indomain[theshold_index]}")
         res_ood, prob_ood = self._evaluation_ood_recall(model, language, self.ood_test_data, self.tokenizer, self.train_data, 
                                                 unique_labels, self.device)
 
@@ -308,7 +308,7 @@ class DNNC(object):
         res_ood_f1 = [res[2] for res in res_ood_prec_f1] # get F1 
         res_ood = [(recall[0], recall[1], precision, f1) for recall, precision, f1 in zip(res_ood_recall, res_ood_precision, res_ood_f1)]
         
-        logger.info(f"ood eval at {config.threshold}: {res_ood[threshold_index]}")
+        logger.info(f"ood eval at {config.threshold} threshold: {res_ood[threshold_index]}")
         logger.info("***"*6)
 
         # save final results
