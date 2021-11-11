@@ -20,7 +20,6 @@ from transformers import (
     AutoModelForSequenceClassification
 )
 
-
 from sklearn.preprocessing import label_binarize
 from sklearn.metrics import (
     classification_report,
@@ -36,6 +35,7 @@ from sklearn.metrics import (
     average_precision_score,
     PrecisionRecallDisplay,
 )
+
 import matplotlib.pyplot as plt
 
 import copy
@@ -149,17 +149,56 @@ class USLP(object):
         positive_train_examples = [(d[0], d[1]) for d in positive_train_examples]
         negative_train_examples = [(d[0], d[1]) for d in negative_train_examples]
 
-        positive_train_features = self.tokenizer(positive_train_examples, return_tensors="pt", padding='max_length', max_length=config.max_seq_length, truncation=True)
-        negative_train_features = self.tokenizer(negative_train_examples, return_tensors="pt", padding='max_length', max_length=config.max_seq_length, truncation=True)
-
+        positive_train_features = self.tokenizer(positive_train_examples, 
+                                                 return_tensors="pt", 
+                                                 padding='max_length', 
+                                                 max_length=config.max_seq_length, 
+                                                 truncation=True)
+        
+        # checking if token_type_ids available for positive examples - should be same for all
+        pos_token_type_ids = positive_train_features.get('token_type_ids', None)
+        if pos_token_type_ids is None:
+            self.is_bert_type_tokenizer = False
+        else:
+            self.is_bert_type_tokenizer = True
+        
+        negative_train_features = self.tokenizer(negative_train_examples, 
+                                                 return_tensors="pt", 
+                                                 padding='max_length',
+                                                 max_length=config.max_seq_length,
+                                                 truncation=True)
+        
         positive_train_labels = torch.tensor([ENTAILMENT for _ in train_labels])
-        positive_train_dataset = TensorDataset(positive_train_features['input_ids'], positive_train_features['attention_mask'], positive_train_labels)
+        
+        if self.is_bert_type_tokenizer != True:
+            positive_train_dataset = TensorDataset(positive_train_features['input_ids'], 
+                                                   positive_train_features['attention_mask'], 
+                                                   positive_train_labels)
+        else:
+            positive_train_dataset = TensorDataset(positive_train_features['input_ids'], 
+                                                   positive_train_features['attention_mask'], 
+                                                   positive_train_features['token_type_ids'], 
+                                                   positive_train_labels)
 
         negative_train_labels = torch.tensor([NON_ENTAILMENT for _ in negative_train_examples])
-        negative_train_dataset = TensorDataset(negative_train_features['input_ids'], negative_train_features['attention_mask'], negative_train_labels)
+        
+        if self.is_bert_type_tokenizer != True:
+            negative_train_dataset = TensorDataset(negative_train_features['input_ids'], 
+                                                   negative_train_features['attention_mask'], 
+                                                   negative_train_labels)
+        else:
+            negative_train_dataset = TensorDataset(negative_train_features['input_ids'], 
+                                                   negative_train_features['attention_mask'],
+                                                   negative_train_features['token_type_ids'],
+                                                   negative_train_labels)          
 
-        self.pos_train_dataloader = DataLoader(positive_train_dataset, batch_size=int(config.train_batch_size//2), shuffle=True)
-        self.neg_train_dataloader = DataLoader(negative_train_dataset, batch_size=config.train_batch_size//4, shuffle=True)
+        self.pos_train_dataloader = DataLoader(positive_train_dataset, 
+                                               batch_size=int(config.train_batch_size//2), 
+                                               shuffle=True)
+        
+        self.neg_train_dataloader = DataLoader(negative_train_dataset, 
+                                               batch_size=config.train_batch_size//4, 
+                                               shuffle=True)
 
         # oos_train_dataloader
         ood_train_data = []
@@ -167,14 +206,33 @@ class USLP(object):
             csv_file = csv.reader(file)
             for line in csv_file:
                 ood_train_data.append(line[0])
+                
         ood_train_examples = []
         for e in ood_train_data:
             for l in unique_train_labels:
                 ood_train_examples.append((e, l))
-        ood_train_features = self.tokenizer(ood_train_examples, return_tensors="pt", padding='max_length', max_length=config.max_seq_length, truncation=True)
+                
+        ood_train_features = self.tokenizer(ood_train_examples, 
+                                            return_tensors="pt", 
+                                            padding='max_length', 
+                                            max_length=config.max_seq_length, 
+                                            truncation=True)
+        
         ood_train_labels = torch.tensor([NON_ENTAILMENT for _ in ood_train_examples])
-        ood_train_dataset = TensorDataset(ood_train_features['input_ids'], ood_train_features['attention_mask'], ood_train_labels)
-        self.ood_train_dataloader = DataLoader(ood_train_dataset, batch_size=config.train_batch_size//4, shuffle=True)
+        
+        if self.is_bert_type_tokenizer != True:
+            ood_train_dataset = TensorDataset(ood_train_features['input_ids'], 
+                                              ood_train_features['attention_mask'], 
+                                              ood_train_labels)
+        else:
+            ood_train_dataset = TensorDataset(ood_train_features['input_ids'], 
+                                              ood_train_features['attention_mask'],
+                                              ood_train_features['token_type_ids'],
+                                              ood_train_labels)
+            
+        self.ood_train_dataloader = DataLoader(ood_train_dataset, 
+                                               batch_size=config.train_batch_size//4, 
+                                               shuffle=True)
 
 
         # load test dataloader
@@ -246,17 +304,30 @@ class USLP(object):
                 model.train()
                 neg_batch = next(iter(self.neg_train_dataloader))
                 ood_batch = next(iter(self.ood_train_dataloader))
-                pos_input_ids, pos_attention_mask, pos_labels = pos_batch
-                neg_input_ids, neg_attention_mask, neg_labels = neg_batch
-                ood_input_ids, ood_attention_mask, ood_labels = ood_batch
+                if self.is_bert_type_tokenizer != True:
+                    pos_input_ids, pos_attention_mask, pos_labels = pos_batch
+                    neg_input_ids, neg_attention_mask, neg_labels = neg_batch
+                    ood_input_ids, ood_attention_mask, ood_labels = ood_batch
+                else:
+                    pos_input_ids, pos_attention_mask, pos_token_type_ids, pos_labels = pos_batch
+                    neg_input_ids, neg_attention_mask, neg_token_type_ids, neg_labels = neg_batch
+                    ood_input_ids, ood_attention_mask, ood_token_type_ids, ood_labels = ood_batch 
+                    
                 input_ids = torch.cat((pos_input_ids, neg_input_ids, ood_input_ids), 0)
                 attention_mask = torch.cat((pos_attention_mask, neg_attention_mask, ood_attention_mask), 0)
+                if self.is_bert_type_tokenizer != True:
+                    token_type_ids = None
+                else:
+                    token_type_ids = torch.cat((pos_token_type_ids, neg_token_type_ids, ood_token_type_ids), 0)       
                 labels = torch.cat((pos_labels, neg_labels, ood_labels), 0)
+                
                 input_ids = input_ids.to(self.device)
                 attention_mask = attention_mask.to(self.device)
+                if self.is_bert_type_tokenizer == True:
+                    token_type_ids = token_type_ids.to(self.device)
                 labels = labels.to(self.device)
 
-                logits = model(input_ids = input_ids, attention_mask = attention_mask, token_type_ids = None)[0]
+                logits = model(input_ids = input_ids, attention_mask = attention_mask, token_type_ids = token_type_ids)[0]
                 loss = loss_fct(logits.view(-1, 2), labels.view(-1))
 
                 # backward
@@ -298,19 +369,23 @@ class USLP(object):
         if config.transform_labels:
             unique_labels = [str(multilingual_label2idx[language][l]) for l in self.unique_test_labels[language]]
 
-        res_indomain, prob_indomain = self._evaluation_indomain(model, language, self.test_data, self.test_label_ids, 
+        res_indomain, prob_indomain = self._evaluation_indomain(model, language, 
+                                                                self.test_data, self.test_label_ids, 
                                                                 self.tokenizer, unique_labels, self.device)
         # compute index to print per threshold entered
         threshold_index = int(config.threshold * 100)
         logger.info(f"in-domain eval at {config.threshold} threshold: {res_indomain[threshold_index]}")
        
-        res_ood_recall, prob_ood = self._evaluation_ood_recall(model, language, self.ood_test_data, self.tokenizer, unique_labels, self.device)
+        res_ood_recall, prob_ood = self._evaluation_ood_recall(model, language, self.ood_test_data,
+                                                               self.tokenizer, unique_labels, self.device)
         
         res_ood_prec_f1 = self._evaluation_ood_precision_f1(prob_indomain, prob_ood)
         
         res_ood_precision = [res[1] for res in res_ood_prec_f1] # get precision
         res_ood_f1 = [res[2] for res in res_ood_prec_f1] # get F1 
-        res_ood = [(recall[0], recall[1], precision, f1) for recall, precision, f1 in zip(res_ood_recall, res_ood_precision, res_ood_f1)]
+        res_ood = [(recall[0], recall[1], precision, f1) for recall, precision, f1 
+                   in zip(res_ood_recall, res_ood_precision, res_ood_f1)]
+        
         logger.info(f"ood eval at {config.threshold} threshold: {res_ood[threshold_index]}")
         logger.info("***"*6)
 
@@ -347,20 +422,31 @@ class USLP(object):
                             padding='max_length', 
                             max_length=self.config.max_seq_length, 
                             truncation=True)
-        dataset = TensorDataset(features['input_ids'], features['attention_mask'])
+        
+        if self.is_bert_type_tokenizer != True:
+            dataset = TensorDataset(features['input_ids'], features['attention_mask'])
+        else:
+            dataset = TensorDataset(features['input_ids'], features['attention_mask'], features['token_type_ids'])
+            
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
         encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
-                input_ids, attention_mask = batch
+                if self.is_bert_type_tokenizer != True:
+                    input_ids, attention_mask = batch
+                    token_type_ids = None
+                else:
+                    input_ids, attention_mask, token_type_ids = batch
                 if self.config.error_analysis:
                     for i, input_id in enumerate(input_ids):
                         encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
-                logits = model(input_ids = input_ids, attention_mask = attention_mask)[0]
+                if self.is_bert_type_tokenizer == True:
+                    token_type_ids = token_type_ids.to(device)
+                logits = model(input_ids = input_ids, attention_mask = attention_mask, token_type_ids = token_type_ids)[0]
                 pred = nn.Softmax(dim=-1)(logits).cpu().detach().numpy()
                 if preds is None:
                     preds = pred
@@ -412,20 +498,30 @@ class USLP(object):
                             padding='max_length', 
                             max_length=self.config.max_seq_length, 
                             truncation=True)
-        dataset = TensorDataset(features['input_ids'], features['attention_mask'])
+        
+        if self.is_bert_type_tokenizer != True:
+            dataset = TensorDataset(features['input_ids'], features['attention_mask'])
+        else:
+            dataset = TensorDataset(features['input_ids'], features['attention_mask'], features['token_type_ids'])
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
         encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
-                input_ids, attention_mask = batch
+                if self.is_bert_type_tokenizer != True:
+                    input_ids, attention_mask = batch
+                    token_type_ids = None
+                else:
+                    input_ids, attention_mask, token_type_ids = batch
                 if self.config.error_analysis:
                     for i, input_id in enumerate(input_ids):
                         encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
-                logits = model(input_ids = input_ids, attention_mask = attention_mask)[0]
+                if self.is_bert_type_tokenizer == True:
+                    token_type_ids = token_type_ids.to(device)                
+                logits = model(input_ids = input_ids, attention_mask = attention_mask, token_type_ids = token_type_ids)[0]
                 pred = nn.Softmax(dim=-1)(logits).cpu().detach().numpy()
                 if preds is None:
                     preds = pred
