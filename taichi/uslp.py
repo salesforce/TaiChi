@@ -132,7 +132,6 @@ class USLP(object):
         # get negative examples keeping language in mind
         negative_train_examples = []
         for e in positive_train_examples:
-            #for l in unique_train_labels:
             for l in lang2label[e[2]]:
                 if e[1] != l:
                     negative_train_examples.append((e[0], l, e[2]))
@@ -373,7 +372,6 @@ class USLP(object):
         res = []
         for threshold in np.arange(0, .91, 0.01):
             preds = []
-            # misclassified = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
                 if prob > threshold:
                     preds.append(pred_label)
