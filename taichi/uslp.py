@@ -70,8 +70,7 @@ class USLP(object):
         self.unique_test_labels = None
         self.test_label_ids = None
         self.ood_test_data = None
-        # what else should be here (negative/positive examples?)
-        #TODO: consolidate config with args in init function
+        
 
     def init(self):
         """
@@ -96,7 +95,6 @@ class USLP(object):
         self.tokenizer = AutoTokenizer.from_pretrained(config.bert_model)
 
         # train_dataloader
-        #train_data, train_labels, train_languages = self._load_data_from_csv(os.path.join(config.data_dir, "aggregated_appen.csv"))
         aggregated_data_df = pd.read_csv(config.train_data_path, names=['utterance', 'language', 'label'])
         train_data = list(aggregated_data_df.utterance)
         train_labels = list(aggregated_data_df.label)
@@ -281,8 +279,6 @@ class USLP(object):
             if config.checkpoint_dir and epoch == config.num_train_epochs-1:
                 if not os.path.isdir(config.checkpoint_dir):
                     os.mkdir(config.checkpoint_dir)
-                # model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model itself
-                # torch.save(model_to_save.state_dict(), f'{config.checkpoint_dir}/pytorch_model_epoch_{epoch}.bin')
                 model.save_pretrained(config.checkpoint_dir)
 
         progress_bar.close()
@@ -302,7 +298,7 @@ class USLP(object):
                                                                 self.tokenizer, unique_labels, self.device)
         logger.info(f"in-domain eval at 0.01 threshold: {res_indomain[1]}")
        
-        res_ood, prob_ood = self._evaluation_ood(model, language, self.ood_test_data, self.tokenizer, unique_labels, self.device)
+        res_ood, prob_ood = self._evaluation_ood_recall(model, language, self.ood_test_data, self.tokenizer, unique_labels, self.device)
         
         logger.info(f"ood eval at 0.01 threshold: {res_ood[1]}")
         logger.info("***"*6)
@@ -394,8 +390,6 @@ class USLP(object):
                     self.ea.save_intent_classification_report(preds, test_labels, unique_labels)
                     self.ea.save_confusion_matrix_plot(preds, test_labels, unique_labels)
 
-
-
             acc = accuracy_score(test_labels, preds)
             prec = precision_score(test_labels, preds, average='macro', zero_division=1)
             recall = recall_score(test_labels, preds, average='macro', zero_division=1)
@@ -404,7 +398,7 @@ class USLP(object):
         return res, max_prob
 
     
-    def _evaluation_ood(self, model, language, ood_test_data, tokenizer, unique_labels, device, eval_batch_size=128):
+    def _evaluation_ood_recall(self, model, language, ood_test_data, tokenizer, unique_labels, device, eval_batch_size=128):
         test_labels = [len(unique_labels) for _ in ood_test_data] # every utterance labeled as OOD with index = len(unique_labels) 
         model.eval()
         
@@ -461,14 +455,9 @@ class USLP(object):
 
                 ood_labels = ["NOT OOD", "OOD"]
                 if self.config.error_analysis:
-                    #self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
                     self.ea.save_intent_classification_report(ood_preds, ood_gt, ood_labels, save_filename="ood_report.csv")
                     self.ea.save_confusion_matrix_plot(ood_preds, ood_gt, ood_labels, save_filename="ood_confusion_matrix.png")
-            
 
-            # acc = accuracy_score(test_labels, preds)
-            # prec = precision_score(test_labels, preds, zero_division=1)
             recall = recall_score(ood_gt, ood_preds, zero_division=1)
-            # f1 = f1_score(test_labels, preds, zero_division=1)
             res.append((threshold, recall))
         return res, max_prob
