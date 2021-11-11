@@ -4,7 +4,7 @@
     "train_data_path": "/export/share/sharvin/clinc150_uci/5-shot/train.csv",
     "test_data_path": "/export/share/sharvin/clinc150_uci/5-shot/test.csv",
     "ood_train_data_path": "/export/share/sharvin/clinc150_uci/5-shot/ood_perturbed_train.csv",
-    "ood_test_data_path": "/export/share/sharvin/clinc150_uci/5-shot/ood_perturbed_test.csv",    
+    "ood_test_data_path": "/export/share/sharvin/clinc150_uci/5-shot/ood_perturbed_test.csv",
     "freeze_embedding": false,
     "gradient_accumulation_steps": 1,
     "learning_rate": 5e-05,
@@ -22,9 +22,5 @@
     "weight_decay": 0.0001,
     "threshold": 0.01,
     "error_analysis": true,
-    "error_analysis_dir": "/export/share/sharvin/clinc150_uci/5-shot/uslp_error_analysis"
+    "error_analysis_dir": "/export/share/sharvin/clinc150_uci/5-shot/uslp_error_analysis",
 }
-
-
-
-

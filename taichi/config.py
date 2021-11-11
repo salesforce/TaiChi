@@ -1,6 +1,7 @@
 import copy
 from typing import Iterable, Tuple
 
+
 class Config:
     """
     A simple wrapper around a dictionary type
@@ -32,7 +33,7 @@ class Config:
         return d.__repr__()
 
     def copy(self):
-        """ Creates a deep copy of this instance """
+        """Creates a deep copy of this instance"""
         return copy.deepcopy(self)
 
     def __getitem__(self, item):
@@ -57,4 +58,3 @@ class Config:
             if key not in self._keys or value != self[key]:
                 return False
         return True
-
