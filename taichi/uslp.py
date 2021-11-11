@@ -48,6 +48,8 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+ENTAILMENT = 0
+NON_ENTAILMENT = 1
 
 class USLP(object):
     """
@@ -127,7 +129,8 @@ class USLP(object):
         
 
         # get positive examples with language information to aid with negative examples
-        positive_train_examples = [(data, label, lang) for data, label, lang in zip(train_data, train_labels, train_languages)]
+        positive_train_examples = [(data, label, lang) for data, label, lang 
+                                   in zip(train_data, train_labels, train_languages)]
 
         # get negative examples keeping language in mind
         negative_train_examples = []
@@ -137,20 +140,22 @@ class USLP(object):
                     negative_train_examples.append((e[0], l, e[2]))
 
         if config.transform_labels:
-            positive_train_examples = [(d[0], str(multilingual_label2idx[d[2]][d[1]])) for d in positive_train_examples]
-            negative_train_examples = [(d[0], str(multilingual_label2idx[d[2]][d[1]])) for d in negative_train_examples]
+            positive_train_examples = [(d[0], str(multilingual_label2idx[d[2]][d[1]])) 
+                                       for d in positive_train_examples]
+            negative_train_examples = [(d[0], str(multilingual_label2idx[d[2]][d[1]])) 
+                                       for d in negative_train_examples]
 
         # modify positive and negative examples to remove the language element
         positive_train_examples = [(d[0], d[1]) for d in positive_train_examples]
         negative_train_examples = [(d[0], d[1]) for d in negative_train_examples]
 
-        positive_train_features = self.tokenizer(positive_train_examples, return_tensors="pt", padding='max_length', max_length=64, truncation=True)
-        negative_train_features = self.tokenizer(negative_train_examples, return_tensors="pt", padding='max_length', max_length=64, truncation=True)
+        positive_train_features = self.tokenizer(positive_train_examples, return_tensors="pt", padding='max_length', max_length=config.max_seq_length, truncation=True)
+        negative_train_features = self.tokenizer(negative_train_examples, return_tensors="pt", padding='max_length', max_length=config.max_seq_length, truncation=True)
 
-        positive_train_labels = torch.tensor([0 for _ in train_labels])
+        positive_train_labels = torch.tensor([ENTAILMENT for _ in train_labels])
         positive_train_dataset = TensorDataset(positive_train_features['input_ids'], positive_train_features['attention_mask'], positive_train_labels)
 
-        negative_train_labels = torch.tensor([1 for _ in negative_train_examples])
+        negative_train_labels = torch.tensor([NON_ENTAILMENT for _ in negative_train_examples])
         negative_train_dataset = TensorDataset(negative_train_features['input_ids'], negative_train_features['attention_mask'], negative_train_labels)
 
         self.pos_train_dataloader = DataLoader(positive_train_dataset, batch_size=int(config.train_batch_size//2), shuffle=True)
@@ -166,7 +171,7 @@ class USLP(object):
         for e in ood_train_data:
             for l in unique_train_labels:
                 ood_train_examples.append((e, l))
-        ood_train_features = self.tokenizer(ood_train_examples, return_tensors="pt", padding='max_length', max_length=64, truncation=True)
+        ood_train_features = self.tokenizer(ood_train_examples, return_tensors="pt", padding='max_length', max_length=config.max_seq_length, truncation=True)
         ood_train_labels = torch.tensor([1 for _ in ood_train_examples])
         ood_train_dataset = TensorDataset(ood_train_features['input_ids'], ood_train_features['attention_mask'], ood_train_labels)
         self.ood_train_dataloader = DataLoader(ood_train_dataset, batch_size=config.train_batch_size//4, shuffle=True)
@@ -341,7 +346,7 @@ class USLP(object):
         features = tokenizer(test_data_in_nli_format, 
                             return_tensors="pt", 
                             padding='max_length', 
-                            max_length=64, 
+                            max_length=self.config.max_seq_length, 
                             truncation=True)
         dataset = TensorDataset(features['input_ids'], features['attention_mask'])
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
@@ -406,7 +411,7 @@ class USLP(object):
         features = tokenizer(test_data_in_nli_format, 
                             return_tensors="pt", 
                             padding='max_length', 
-                            max_length=64, 
+                            max_length=self.config.max_seq_length, 
                             truncation=True)
         dataset = TensorDataset(features['input_ids'], features['attention_mask'])
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
