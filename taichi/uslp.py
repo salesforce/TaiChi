@@ -172,7 +172,7 @@ class USLP(object):
             for l in unique_train_labels:
                 ood_train_examples.append((e, l))
         ood_train_features = self.tokenizer(ood_train_examples, return_tensors="pt", padding='max_length', max_length=config.max_seq_length, truncation=True)
-        ood_train_labels = torch.tensor([1 for _ in ood_train_examples])
+        ood_train_labels = torch.tensor([NON_ENTAILMENT for _ in ood_train_examples])
         ood_train_dataset = TensorDataset(ood_train_features['input_ids'], ood_train_features['attention_mask'], ood_train_labels)
         self.ood_train_dataloader = DataLoader(ood_train_dataset, batch_size=config.train_batch_size//4, shuffle=True)
 
@@ -443,13 +443,13 @@ class USLP(object):
             ood_preds = []
             ood_gt = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
-                ood_gt.append(1)
+                ood_gt.append(NON_ENTAILMENT)
                 if prob > threshold:
                     preds.append(pred_label)
-                    ood_preds.append(0)
+                    ood_preds.append(ENTAILMENT)
                 else:
                     preds.append(len(unique_labels))
-                    ood_preds.append(1)
+                    ood_preds.append(NON_ENTAILMENT)
 
 
             if threshold == self.config.threshold:
@@ -464,16 +464,16 @@ class USLP(object):
         return res, max_prob
     
     def _evaluation_ood_precision_f1(self, in_domain_probs, ood_probs):
-        labels = [0 for _ in in_domain_probs] + [1 for _ in ood_probs]
+        labels = [ENTAILMENT for _ in in_domain_probs] + [NON_ENTAILMENT for _ in ood_probs]
         max_conf = np.concatenate((in_domain_probs, ood_probs))
         res = []
         for threshold in np.arange(0, .91, 0.01):
             preds = []
             for prob in max_conf:
                 if prob > threshold:
-                    preds.append(0)
+                    preds.append(ENTAILMENT)
                 else:
-                    preds.append(1)
+                    preds.append(NON_ENTAILMENT)
 
             prec = precision_score(labels, preds, zero_division=1)
             f1 = f1_score(labels, preds, zero_division=1)
