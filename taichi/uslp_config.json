@@ -22,5 +22,5 @@
     "weight_decay": 0.0001,
     "threshold": 0.01,
     "error_analysis": true,
-    "error_analysis_dir": "/export/share/sharvin/clinc150_uci/5-shot/uslp_error_analysis",
+    "error_analysis_dir": "/export/share/sharvin/clinc150_uci/5-shot/uslp_error_analysis"
 }
