@@ -159,24 +159,46 @@ class DNNC(object):
         positive_train_features = self.tokenizer(positive_train_examples, return_tensors="pt", 
                                                  padding='max_length', max_length=config.max_seq_length, 
                                                  truncation=True)
+
+        # checking if token_type_ids available for positive examples - should be same for all
+        pos_token_type_ids = positive_train_features.get('token_type_ids', None)
+        if pos_token_type_ids is None:
+            self.is_bert_type_tokenizer = False
+        else:
+            self.is_bert_type_tokenizer = True
         
         negative_train_features = self.tokenizer(negative_train_examples, return_tensors="pt", 
                                                  padding='max_length', max_length=config.max_seq_length, 
                                                  truncation=True)
 
         positive_train_labels = torch.tensor([ENTAILMENT for _ in positive_train_examples])
-        positive_train_dataset = TensorDataset(positive_train_features['input_ids'], 
-                                               positive_train_features['attention_mask'], 
-                                               positive_train_labels)
+        
+        if self.is_bert_type_tokenizer != True:
+            positive_train_dataset = TensorDataset(positive_train_features['input_ids'], 
+                                                   positive_train_features['attention_mask'], 
+                                                   positive_train_labels)
+        else:
+            positive_train_dataset = TensorDataset(positive_train_features['input_ids'], 
+                                                   positive_train_features['attention_mask'], 
+                                                   positive_train_features['token_type_ids'], 
+                                                   positive_train_labels)
 
         negative_train_labels = torch.tensor([NON_ENTAILMENT for _ in negative_train_examples])
-        negative_train_dataset = TensorDataset(negative_train_features['input_ids'], 
-                                               negative_train_features['attention_mask'], 
-                                               negative_train_labels)
+        
+        if self.is_bert_type_tokenizer != True:
+            negative_train_dataset = TensorDataset(negative_train_features['input_ids'], 
+                                                   negative_train_features['attention_mask'], 
+                                                   negative_train_labels)
+        else:
+            negative_train_dataset = TensorDataset(negative_train_features['input_ids'], 
+                                                   negative_train_features['attention_mask'],
+                                                   negative_train_features['token_type_ids'],
+                                                   negative_train_labels)
 
         self.pos_train_dataloader = DataLoader(positive_train_dataset, 
                                                batch_size=int(config.train_batch_size//2), 
                                                shuffle=True)
+        
         self.neg_train_dataloader = DataLoader(negative_train_dataset, 
                                                batch_size=config.train_batch_size//4, 
                                                shuffle=True)
@@ -197,9 +219,15 @@ class DNNC(object):
                                             padding='max_length', max_length=config.max_seq_length, 
                                             truncation=True)
         ood_train_labels = torch.tensor([NON_ENTAILMENT for _ in ood_train_examples])
-        ood_train_dataset = TensorDataset(ood_train_features['input_ids'], 
-                                          ood_train_features['attention_mask'], 
-                                          ood_train_labels)
+        if self.is_bert_type_tokenizer != True:
+            ood_train_dataset = TensorDataset(ood_train_features['input_ids'], 
+                                              ood_train_features['attention_mask'], 
+                                              ood_train_labels)
+        else:
+            ood_train_dataset = TensorDataset(ood_train_features['input_ids'], 
+                                              ood_train_features['attention_mask'],
+                                              ood_train_features['token_type_ids'],
+                                              ood_train_labels)
         self.ood_train_dataloader = DataLoader(ood_train_dataset, 
                                                batch_size=config.train_batch_size//4, 
                                                shuffle=True)
@@ -276,17 +304,28 @@ class DNNC(object):
                 model.train()
                 neg_batch = next(iter(self.neg_train_dataloader))
                 ood_batch = next(iter(self.ood_train_dataloader))
-                pos_input_ids, pos_attention_mask, pos_labels = pos_batch
-                neg_input_ids, neg_attention_mask, neg_labels = neg_batch
-                ood_input_ids, ood_attention_mask, ood_labels = ood_batch
+                if self.is_bert_type_tokenizer != True:
+                    pos_input_ids, pos_attention_mask, pos_labels = pos_batch
+                    neg_input_ids, neg_attention_mask, neg_labels = neg_batch
+                    ood_input_ids, ood_attention_mask, ood_labels = ood_batch
+                else:
+                    pos_input_ids, pos_attention_mask, pos_token_type_ids, pos_labels = pos_batch
+                    neg_input_ids, neg_attention_mask, neg_token_type_ids, neg_labels = neg_batch
+                    ood_input_ids, ood_attention_mask, ood_token_type_ids, ood_labels = ood_batch
                 input_ids = torch.cat((pos_input_ids, neg_input_ids, ood_input_ids), 0)
                 attention_mask = torch.cat((pos_attention_mask, neg_attention_mask, ood_attention_mask), 0)
+                if self.is_bert_type_tokenizer != True:
+                    token_type_ids = None
+                else:
+                    token_type_ids = torch.cat((pos_token_type_ids, neg_token_type_ids, ood_token_type_ids), 0)                
                 labels = torch.cat((pos_labels, neg_labels, ood_labels), 0)
                 input_ids = input_ids.to(self.device)
                 attention_mask = attention_mask.to(self.device)
+                if self.is_bert_type_tokenizer == True:
+                    token_type_ids = token_type_ids.to(self.device)                    
                 labels = labels.to(self.device)
 
-                logits = model(input_ids = input_ids, attention_mask = attention_mask, token_type_ids = None)[0]
+                logits = model(input_ids = input_ids, attention_mask = attention_mask, token_type_ids = token_type_ids)[0]
                 loss = loss_fct(logits.view(-1, 2), labels.view(-1))
 
                 # backward
@@ -380,20 +419,29 @@ class DNNC(object):
                             max_length=self.config.max_seq_length, 
                             truncation=True)
 
-        dataset = TensorDataset(features['input_ids'], features['attention_mask'])
+        if self.is_bert_type_tokenizer != True:
+            dataset = TensorDataset(features['input_ids'], features['attention_mask'])
+        else:
+            dataset = TensorDataset(features['input_ids'], features['attention_mask'], features['token_type_ids'])
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
         encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
-                input_ids, attention_mask = batch
+                if self.is_bert_type_tokenizer != True:
+                    input_ids, attention_mask = batch
+                    token_type_ids = None
+                else:
+                    input_ids, attention_mask, token_type_ids = batch
                 if self.config.error_analysis:
                     for i, input_id in enumerate(input_ids):
                         encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
-                logits = model(input_ids = input_ids, attention_mask = attention_mask)[0]
+                if self.is_bert_type_tokenizer == True:
+                    token_type_ids = token_type_ids.to(device)                
+                logits = model(input_ids = input_ids, attention_mask = attention_mask, token_type_ids = token_type_ids)[0]
                 pred = nn.Softmax(dim=-1)(logits).cpu().detach().numpy()
                 if preds is None:
                     preds = pred
@@ -444,20 +492,31 @@ class DNNC(object):
                             padding='max_length', 
                             max_length=self.config.max_seq_length, 
                             truncation=True)
-        dataset = TensorDataset(features['input_ids'], features['attention_mask'])
+        
+        if self.is_bert_type_tokenizer != True:
+            dataset = TensorDataset(features['input_ids'], features['attention_mask'])
+        else:
+            dataset = TensorDataset(features['input_ids'], features['attention_mask'], features['token_type_ids'])
+        
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
         encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
-                input_ids, attention_mask = batch
+                if self.is_bert_type_tokenizer != True:
+                    input_ids, attention_mask = batch
+                    token_type_ids = None
+                else:
+                    input_ids, attention_mask, token_type_ids = batch
                 if self.config.error_analysis:
                     for i, input_id in enumerate(input_ids):
                         encoded_inputs.append(input_id)                
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
-                logits = model(input_ids = input_ids, attention_mask = attention_mask)[0]
+                if self.is_bert_type_tokenizer == True:
+                    token_type_ids = token_type_ids.to(device)                 
+                logits = model(input_ids = input_ids, attention_mask = attention_mask, token_type_ids = token_type_ids)[0]
                 pred = nn.Softmax(dim=-1)(logits).cpu().detach().numpy()
                 if preds is None:
                     preds = pred
