@@ -297,9 +297,15 @@ class USLP(object):
                                                                 self.tokenizer, unique_labels, self.device)
         logger.info(f"in-domain eval at 0.01 threshold: {res_indomain[1]}")
        
-        res_ood, prob_ood = self._evaluation_ood_recall(model, language, self.ood_test_data, self.tokenizer, unique_labels, self.device)
+        res_ood_recall, prob_ood = self._evaluation_ood_recall(model, language, self.ood_test_data, self.tokenizer, unique_labels, self.device)
         
-        logger.info(f"ood eval at 0.01 threshold: {res_ood[1]}")
+        res_ood_prec_f1 = self._evaluation_ood_precision_f1(prob_indomain, prob_ood)
+        
+        res_ood_precision = [res[1] for res in res_ood_prec_f1] # get precision
+        res_ood_f1 = [res[2] for res in res_ood_prec_f1] # get F1 
+        res_ood = [(recall[0], recall[1], precision, f1) for recall, precision, f1 in zip(res_ood_recall, res_ood_precision, res_ood_f1)]
+        threshold_index = config.threshold * 100
+        logger.info(f"ood eval at {config.threshold} threshold: {res_ood[threshold_index]}")
         logger.info("***"*6)
 
         # save final results
@@ -459,3 +465,20 @@ class USLP(object):
             recall = recall_score(ood_gt, ood_preds, zero_division=1)
             res.append((threshold, recall))
         return res, max_prob
+    
+    def _evaluation_ood_precision_f1(self, in_domain_probs, ood_probs):
+        labels = [0 for _ in in_domain_probs] + [1 for _ in ood_probs]
+        max_conf = np.concatenate((in_domain_probs, ood_probs))
+        res = []
+        for threshold in np.arange(0, .91, 0.01):
+            preds = []
+            for prob in max_conf:
+                if prob > threshold:
+                    preds.append(0)
+                else:
+                    preds.append(1)
+
+            prec = precision_score(labels, preds, zero_division=1)
+            f1 = f1_score(labels, preds, zero_division=1)
+            res.append((threshold, prec, f1))
+        return res
