@@ -196,7 +196,7 @@ class DNNC(object):
         ood_train_features = self.tokenizer(ood_train_examples, return_tensors="pt", 
                                             padding='max_length', max_length=config.max_seq_length, 
                                             truncation=True)
-        ood_train_labels = torch.tensor([1 for _ in ood_train_examples])
+        ood_train_labels = torch.tensor([NON_ENTAILMENT for _ in ood_train_examples])
         ood_train_dataset = TensorDataset(ood_train_features['input_ids'], 
                                           ood_train_features['attention_mask'], 
                                           ood_train_labels)
@@ -474,7 +474,7 @@ class DNNC(object):
             ood_preds = []
             ood_gt = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
-                ood_gt.append(1)
+                ood_gt.append(NON_ENTAILMENT)
                 if prob > threshold:
                     preds.append(pred_label)
                     ood_preds.append(ENTAILMENT)
