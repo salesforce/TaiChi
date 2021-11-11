@@ -372,7 +372,7 @@ class DNNC(object):
         # compute index to print per threshold entered
         threshold_index = int(config.threshold * 100) 
         logger.info(f"in-domain eval at {config.threshold} threshold: {res_indomain[threshold_index]}")
-        res_ood, prob_ood = self._evaluation_ood_recall(model, language, self.ood_test_data, self.tokenizer, self.train_data, 
+        res_ood_recall, prob_ood = self._evaluation_ood_recall(model, language, self.ood_test_data, self.tokenizer, self.train_data, 
                                                 unique_labels, self.device)
 
         res_ood_prec_f1 = self._evaluation_ood_precision_f1(prob_indomain, prob_ood)
