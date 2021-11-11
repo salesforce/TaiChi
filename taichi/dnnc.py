@@ -51,7 +51,7 @@ class DNNC(object):
     """
     Main class for DNNC including initialization, training and evaluation
     """
-    def __init__(self, config_file='./taichi/dnnc_config.json'): # TODO: prepare dnnc config file looking at main dnnc train file
+    def __init__(self, config_file='./taichi/dnnc_config.json'):
         with open(config_file, 'r') as f:
             config_dict = json.loads(f.read())
         self.config = Config(config_dict)
@@ -71,8 +71,7 @@ class DNNC(object):
         self.test_labels = None
         self.test_label_ids = None
         self.ood_test_data = None
-        # what else should be here (negative/positive examples?)
-        #TODO: consolidate config with args in init function
+
 
     def init(self):
         """
@@ -103,8 +102,7 @@ class DNNC(object):
         self.train_languages = list(aggregated_data_df.language)
 
         unique_languages = sorted(list(set(self.train_languages)))
-        # self.train_labels = [" ".join(l.split("_")).strip() for l in train_labels] 
-        # aggregated_data_df['label'] = train_labels
+
         # map languages to unique labels it contains examples of in the data
         lang2label = {}
         for language in unique_languages:
@@ -187,8 +185,6 @@ class DNNC(object):
     
         self.unique_test_labels = lang2label
         self.test_label_ids = [multilingual_label2idx[lang][lbl] for lbl, lang in zip(self.test_labels, self.test_languages)]
-        # self.test_labels = [" ".join(l.split("_")).strip() for l in self.test_labels]
-        # self.test_label_ids = [multilingual_label2idx[config.language][l] for l in self.test_labels]
 
         # load oos test dataloader
         self.ood_test_data = []
@@ -283,8 +279,6 @@ class DNNC(object):
             if config.checkpoint_dir and epoch == config.num_train_epochs-1:
                 if not os.path.isdir(config.checkpoint_dir):
                     os.mkdir(config.checkpoint_dir)
-                # model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model itself
-                # torch.save(model_to_save.state_dict(), f'{config.checkpoint_dir}/pytorch_model_epoch_{epoch}.bin')
                 model.save_pretrained(config.checkpoint_dir)
 
         progress_bar.close()
@@ -303,7 +297,7 @@ class DNNC(object):
                                                                 self.tokenizer, self.train_data, self.train_label_ids, 
                                                                 unique_labels, self.device)
         logger.info(f"in-domain eval: {res_indomain[1]}")
-        res_ood, prob_ood = self._evaluation_ood(model, language, self.ood_test_data, self.tokenizer, self.train_data, 
+        res_ood, prob_ood = self._evaluation_ood_recall(model, language, self.ood_test_data, self.tokenizer, self.train_data, 
                                                 unique_labels, self.device)
         logger.info(f"ood eval: {res_ood[1]}")
         logger.info("***"*6)
@@ -392,7 +386,7 @@ class DNNC(object):
 
 
     
-    def _evaluation_ood(self, model, language, ood_test_data, tokenizer, train_data, unique_labels, device, eval_batch_size=128):
+    def _evaluation_ood_recall(self, model, language, ood_test_data, tokenizer, train_data, unique_labels, device, eval_batch_size=128):
         
         test_labels = [len(unique_labels) for _ in ood_test_data]
         model.eval()
@@ -450,13 +444,9 @@ class DNNC(object):
 
                 ood_labels = ["NOT OOD", "OOD"]
                 if self.config.error_analysis:
-                    #self.multilingual_idx2label[language][len(unique_labels)] = "OOD"
                     self.ea.save_intent_classification_report(ood_preds, ood_gt, ood_labels, save_filename="ood_report.csv")
                     self.ea.save_confusion_matrix_plot(ood_preds, ood_gt, ood_labels, save_filename="ood_confusion_matrix")        
 
-            # acc = accuracy_score(test_labels, preds)
-            # prec = precision_score(test_labels, preds, zero_division=1)
             recall = recall_score(ood_gt, ood_preds, zero_division=1)
-            # f1 = f1_score(test_labels, preds, zero_division=1)
             res.append((threshold, recall))
         return res, max_prob    
