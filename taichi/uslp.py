@@ -301,7 +301,7 @@ class USLP(object):
         res_indomain, prob_indomain = self._evaluation_indomain(model, language, self.test_data, self.test_label_ids, 
                                                                 self.tokenizer, unique_labels, self.device)
         # compute index to print per threshold entered
-        threshold_index = config.threshold * 100
+        threshold_index = int(config.threshold * 100)
         logger.info(f"in-domain eval at {config.threshold} threshold: {res_indomain[threshold_index]}")
        
         res_ood_recall, prob_ood = self._evaluation_ood_recall(model, language, self.ood_test_data, self.tokenizer, unique_labels, self.device)
