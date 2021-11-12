@@ -180,6 +180,9 @@ class DNNC(object):
             max_length=config.max_seq_length,
             truncation=True,
         )
+        num_positive_train_examples = len(positive_train_examples)
+
+        del positive_train_examples # free memory
 
         # checking if token_type_ids available for positive examples - should be same for all
         pos_token_type_ids = positive_train_features.get("token_type_ids", None)
@@ -195,9 +198,12 @@ class DNNC(object):
             max_length=config.max_seq_length,
             truncation=True,
         )
+        num_negative_train_examples = len(negative_train_examples)
+
+        del negative_train_examples # free memory
 
         positive_train_labels = torch.tensor(
-            [ENTAILMENT for _ in positive_train_examples]
+            [ENTAILMENT for _ in range(num_positive_train_examples)]
         )
 
         if self.is_bert_type_tokenizer != True:
@@ -215,7 +221,7 @@ class DNNC(object):
             )
 
         negative_train_labels = torch.tensor(
-            [NON_ENTAILMENT for _ in negative_train_examples]
+            [NON_ENTAILMENT for _ in range(num_negative_train_examples)]
         )
 
         if self.is_bert_type_tokenizer != True:
@@ -263,7 +269,11 @@ class DNNC(object):
             max_length=config.max_seq_length,
             truncation=True,
         )
-        ood_train_labels = torch.tensor([NON_ENTAILMENT for _ in ood_train_examples])
+        num_ood_train_examples = len(ood_train_examples)
+
+        del ood_train_examples # free memory
+
+        ood_train_labels = torch.tensor([NON_ENTAILMENT for _ in range(num_ood_train_examples)])
         if self.is_bert_type_tokenizer != True:
             ood_train_dataset = TensorDataset(
                 ood_train_features["input_ids"],
