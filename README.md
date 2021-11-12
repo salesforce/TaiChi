@@ -84,24 +84,24 @@ Comparable results for USLP using Taichi to the results presented in the paper (
 |model	|samples per class	|in-domain F1	|OOD-recall	|OOD-precision	|
 |---	|---	|---	|---	|---	|
 |USLP	|full	|0.9459	|0.637	|0.947	|
-|10	|0.892	|0.734	|0.854	|
-|5	|0.8354	|0.679	|0.857	|
-|1	|0.6667	|0.629	|0.664	|
-|DNNC	|full	|	|	|	|
-|10	|0.9203	|0.603	|0.933	|
-|5	|0.902	|0.789	|0.858	|
-|1	|NA	|NA	|NA	|
+|   |10	|0.892	|0.734	|0.854	|
+|   |5	|0.8354	|0.679	|0.857	|
+|   |1	|0.6667	|0.629	|0.664	|
+|DNNC   |full	|	|	|	|
+|   |10	|0.9203	|0.603	|0.933	|
+|   |5	|0.902	|0.789	|0.858	|
+|   |1	|NA	|NA	|NA	|
 
 We also compare this with using off-the-shelf BERT model (`bert-base-uncased`) and get the following results:
 
 |model	|samples per class	|in-domain F1	|OOD-recall	|OOD-precision	|
 |---	|---	|---	|---	|---	|
 |USLP	|full	|0.9446	|0.722	|0.914	|
-|10	|0.8838	|0.738	|0.836	|
-|5	|0.8289	|0.772	|0.721	|
-|1	|0.6526	|0.66	|0.584	|
+|   |10	|0.8838	|0.738	|0.836	|
+|   |5	|0.8289	|0.772	|0.721	|
+|   |1	|0.6526	|0.66	|0.584	|
 |DNNC	|full	|	|	|	|
-|10	|	|	|	|
-|5	|0.8732	|0.737	|0.791	|
-|1	|NA	|NA	|NA	|
+|   |10	|	|	|	|
+|   |5	|0.8732	|0.737	|0.791	|
+|   |1	|NA	|NA	|NA	|
 
