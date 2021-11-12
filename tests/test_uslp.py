@@ -18,6 +18,7 @@ try:
 except ImportError:
     logger.info('ImportError!')
 
+    
 
 # add all paths and hyperparameters in test config file    
 config = "tests/test_uslp_config.json"
@@ -26,7 +27,7 @@ config = "tests/test_uslp_config.json"
 class ExperimentRunTest(unittest.TestCase):
 
     def test_run(self):
-        u = uslp.USLP()
+        u = uslp.USLP(config)
         logger.info('initialize the USLP model with training data and model parameters...')
         u.init()
         logger.info('initialization completed!')
