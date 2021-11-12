@@ -77,7 +77,9 @@
 8. No Data Augmentation
 
 **Results From Paper (*Focus on DNNC and USLP-T*)**
-[Image: Screen Shot 2021-11-08 at 1.52.14 PM.png]**Results using Taichi Library**
+![paper-results](./readme/USLP_Paper_Results.png)
+
+**Results using Taichi Library**
 
 Comparable results for USLP using Taichi to the results presented in the paper (USLP-T) for in-domain F1, OOD-Recall and OOD-Precision. Higher results for DNNC in comparison to results in the paper (DNNC) for in-domain F1 and OOD-Recall with comparable OOD-Precision.
 
