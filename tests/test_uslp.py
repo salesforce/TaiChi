@@ -45,9 +45,11 @@ class ExperimentRunTest(unittest.TestCase):
         logger.info('checking if results have been saved...')
         self.assertTrue(os.path.exists(u.config.error_analysis_dir), 'error analysis folder was not created!') # change path to save_results_fp in test_uslp_config
         files = [f for f in os.walk(u.config.error_analysis_dir)]
-        self.assertEqual(len(files[0][-1]), 5, 'error analysis files are missing!') # count number of files in saved_model_dir        
+        self.assertEqual(len(files[0][-1]), 5, 'error analysis files are missing!') # count files in saved_model_dir
+        self.assertTrue(os.path.exists(u.config.save_result_fp), 'results were not generated') # check if result file created
         shutil.rmtree(u.config.saved_model_path)
         shutil.rmtree(u.config.error_analysis_dir)
+        os.remove(u.config.save_result_fp)
         logger.info('testing completed!')
 
 if __name__ == '__main__':
