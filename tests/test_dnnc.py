@@ -12,7 +12,7 @@ logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(messa
 logger = logging.getLogger(__name__)
 
 try:
-    logger.info('importing uslp from taichi...')
+    logger.info('importing dnnc from taichi...')
     from taichi import dnnc
     logger.info('ImportSuccess!')
 except ImportError:
@@ -28,7 +28,7 @@ class ExperimentRunTest(unittest.TestCase):
 
     def test_run(self):
         d = dnnc.DNNC(config)
-        logger.info('initialize the USLP model with training data and model parameters...')
+        logger.info('initialize the DNNC model with training data and model parameters...')
         d.init()
         logger.info('initialization completed!')
         logger.info('begin the model training...')
