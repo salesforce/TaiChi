@@ -17,7 +17,7 @@
 
 ### High Level Details on Algorithms
 
-[Image: Screen Shot 2021-11-01 at 3.44.32 PM.png]
+[Image: ./readme/USLP_and_DNNC.png]
 1. As explained above, the difference between USLP and DNNC is that USLP reframes the classification task as an entailment prediction between query utterance and semantic label, while DNNC reframes the task as an entailment prediction between query and example utterances
 2. The USLP model is typically faster than DNNC in training as number of labels are usually lower than the number of examples
 
