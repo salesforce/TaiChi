@@ -49,7 +49,7 @@ class ExperimentRunTest(unittest.TestCase):
         self.assertTrue(os.path.exists(d.config.save_result_fp), 'results file missing') # check if result file created 
         shutil.rmtree(d.config.saved_model_path)
         shutil.rmtree(d.config.error_analysis_dir)
-        os.remove(d.config,save_result_fp)
+        os.remove(d.config.save_result_fp)
         logger.info('testing completed!')
 
 if __name__ == '__main__':
