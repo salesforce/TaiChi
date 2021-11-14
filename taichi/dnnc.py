@@ -51,6 +51,10 @@ logger = logging.getLogger(__name__)
 ENTAILMENT = 0
 NON_ENTAILMENT = 1
 
+THRESHOLD_MIN = 0
+THRESHOLD_MAX = 0.99
+THRESHOLD_STEP = 0.01
+
 
 class DNNC(object):
     """
@@ -606,7 +610,7 @@ class DNNC(object):
         max_prob = np.max(preds[:, :, 0], axis=1)
 
         res = []
-        for threshold in np.arange(0.0, 0.91, 0.01):
+        for threshold in np.arange(THRESHOLD_MIN, THRESHOLD_MAX, THRESHOLD_STEP):
             preds = []
             for prob, pred_label in zip(max_prob, max_pos_idx):
                 if prob > threshold:
@@ -711,7 +715,7 @@ class DNNC(object):
         max_prob = np.max(preds[:, :, 0], axis=1)
 
         res = []
-        for threshold in np.arange(0, 0.91, 0.01):
+        for threshold in np.arange(THRESHOLD_MIN, THRESHOLD_MAX, THRESHOLD_STEP):
             preds = []
             ood_preds = []
             ood_gt = []
