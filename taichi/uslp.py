@@ -471,6 +471,14 @@ class USLP(object):
             unique_labels,
             self.device,
         )
+
+        if config.error_analysis:
+            res_id_thresholds = [res[0] for res in res_indomain]
+            res_id_precision = [res[2] for res in res_indomain]
+            res_id_recall = [res[3] for res in res_indomain]
+
+            self.ea.save_pr_curve_plot(res_id_precision, res_id_recall)
+
         # compute index to print per threshold entered
         threshold_index = int(config.threshold * 100)
         logger.info(
