@@ -25,18 +25,15 @@ class ErrorAnalysis(object):
         os.makedirs(self.save_dir, exist_ok=True)
 
     def save_pr_curve_plot(
-        self, precision, recall, save_filename="multiclass-pr-curve.png"
+        self, precision, recall, save_filename="pr-curve-plot.png"
     ):
 
+        fig, ax = plt.subplots()
         display = PrecisionRecallDisplay(
             recall=recall,
             precision=precision
         )
-        display.plot(ax=ax, name="precision-recall", color="blue")
-
-        ax.set_xlim([0.0, 1.0])
-        ax.set_ylim([0.0, 1.0])
-
+        display.plot(ax=ax, name="precision-recall curve", color="blue")
         plt.show()
         save_path = os.path.join(self.save_dir, save_filename)
         plt.savefig(save_path)
