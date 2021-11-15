@@ -24,19 +24,91 @@ class ErrorAnalysis(object):
         self.save_dir = save_dir
         os.makedirs(self.save_dir, exist_ok=True)
 
-    def save_pr_curve_plot(
-        self, precision, recall, save_filename="pr-curve-plot.png"
-    ):
+    # def save_pr_curve_plot(
+    #     self, precision, recall, save_filename="pr-curve-plot.png"
+    # ):
 
-        fig, ax = plt.subplots()
-        display = PrecisionRecallDisplay(
-            recall=recall,
-            precision=precision
+    #     fig, ax = plt.subplots()
+    #     display = PrecisionRecallDisplay(
+    #         recall=recall,
+    #         precision=precision
+    #     )
+    #     display.plot(ax=ax, name="precision-recall curve", color="blue")
+    #     plt.show()
+    #     save_path = os.path.join(self.save_dir, save_filename)
+    #     fig.savefig(save_path)
+    def save_pr_curve_plot(self, preds, test_labels, unique_labels, save_path="./multiclass-pr-curve.png"):
+
+        Y_test = label_binarize(test_labels, classes=range(len(unique_labels)))
+        y_score = preds[:,:,0]
+        
+        # For each class
+        precision = dict()
+        recall = dict()
+        average_precision = dict()
+        for i in range(len(unique_labels)):
+            precision[i], recall[i], _ = precision_recall_curve(Y_test[:, i], y_score[:, i])
+            average_precision[i] = average_precision_score(Y_test[:, i], y_score[:, i])
+
+        # A "micro-average": quantifying score on all classes jointly
+        precision["micro"], recall["micro"], _ = precision_recall_curve(
+            Y_test.ravel(), y_score.ravel()
         )
-        display.plot(ax=ax, name="precision-recall curve", color="blue")
+        average_precision["micro"] = average_precision_score(Y_test, y_score, average="micro")
+
+        display = PrecisionRecallDisplay(
+            recall=recall["micro"],
+            precision=precision["micro"],
+            average_precision=average_precision["micro"],
+        )
+        display.plot()
+        _ = display.ax_.set_title("Micro-averaged over all classes")
+
+        # setup plot details
+        cmap = plt.cm.tab20
+        cmaplist = [cmap(i) for i in range(cmap.N)]
+        # create the new map
+        colors = cmaplist[:len(unique_labels)]
+
+        _, ax = plt.subplots(figsize=(14, 16))
+
+        f_scores = np.linspace(0.2, 1.0, num=5)
+        lines, labels = [], []
+        for f_score in f_scores:
+            x = np.linspace(0.01, 1)
+            y = f_score * x / (2 * x - f_score)
+            (l,) = plt.plot(x[y >= 0], y[y >= 0], color="gray", alpha=0.2)
+            plt.annotate("f1={0:0.1f}".format(f_score), xy=(0.9, y[45] + 0.02))
+
+        display = PrecisionRecallDisplay(
+            recall=recall["micro"],
+            precision=precision["micro"],
+            average_precision=average_precision["micro"],
+        )
+        display.plot(ax=ax, name="Micro-average precision-recall", color="gold")
+
+        for i, color in zip(range(len(unique_labels)), colors):
+            display = PrecisionRecallDisplay(
+                recall=recall[i],
+                precision=precision[i],
+                average_precision=average_precision[i],
+            )
+            display.plot(ax=ax, name=f"Precision-recall for class: {unique_labels[i]}", color=color)
+
+        # add the legend for the iso-f1 curves
+        handles, labels = display.ax_.get_legend_handles_labels()
+        handles.extend([l])
+        labels.extend(["iso-f1 curves"])
+        # set the legend and the axes
+        ax.set_xlim([0.0, 1.0])
+        ax.set_ylim([0.0, 1.05])
+        ax.legend(handles=handles, labels=labels, loc="best")
+        ax.set_title("Extension of Precision-Recall curve to multi-class")
+
         plt.show()
-        save_path = os.path.join(self.save_dir, save_filename)
-        fig.savefig(save_path)
+
+        plt.savefig(save_path)
+
 
     def save_confusion_matrix_plot(
         self, preds, test_labels, unique_labels, save_filename="confusion_matrix.png"
