@@ -115,6 +115,15 @@ class USLP(object):
         unique_languages = sorted(list(set(train_languages)))
 
         self.train_data = train_data
+
+        # convert potential camelCase labels to snake_case
+        def to_snake_case(name):
+            name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+            name = re.sub('__([A-Z])', r'_\1', name)
+            name = re.sub('([a-z0-9])([A-Z])', r'\1_\2', name)
+            return name.lower()
+
+        train_labels = [to_snake_case(l) for l in train_labels]
         train_labels = [" ".join(l.split("_")).strip() for l in train_labels]
 
         aggregated_data_df["label"] = train_labels
@@ -284,6 +293,9 @@ class USLP(object):
 
         # detect language and assign label2idx for individual languages appropriately
         self.unique_test_labels = lang2label
+        self.test_labels = [
+            to_snake_case(l) for l in self.test_labels
+        ]
         self.test_labels = [
             " ".join(l.split("_")).strip() if "_" in l else l for l in self.test_labels
         ]
@@ -473,12 +485,12 @@ class USLP(object):
             self.device,
         )
 
-        if config.error_analysis:
-            res_id_thresholds = [res[0] for res in res_indomain]
-            res_id_precision = [res[2] for res in res_indomain]
-            res_id_recall = [res[3] for res in res_indomain]
+        #if config.error_analysis:
+        #    res_id_thresholds = [res[0] for res in res_indomain]
+        #    res_id_precision = [res[2] for res in res_indomain]
+        #    res_id_recall = [res[3] for res in res_indomain]
 
-            self.ea.save_pr_curve_plot(res_id_precision, res_id_recall)
+            #self.ea.save_pr_curve_plot(res_id_precision, res_id_recall)
 
         # compute index to print per threshold entered
         threshold_index = int(config.threshold * 100)
@@ -597,6 +609,10 @@ class USLP(object):
         preds = np.reshape(preds, (-1, len(unique_labels), 2))
         max_pos_idx = np.argmax(preds[:, :, 0], axis=1)
         max_prob = np.max(preds[:, :, 0], axis=1)
+
+
+        if self.config.error_analysis:
+            self.ea.save_pr_curve_plot(preds, test_labels, unique_labels)
 
         res = []
         for threshold in np.arange(THRESHOLD_MIN, THRESHOLD_MAX, THRESHOLD_STEP):
