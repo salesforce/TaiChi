@@ -36,7 +36,7 @@ class ErrorAnalysis(object):
         display.plot(ax=ax, name="precision-recall curve", color="blue")
         plt.show()
         save_path = os.path.join(self.save_dir, save_filename)
-        plt.savefig(save_path)
+        fig.savefig(save_path)
 
     def save_confusion_matrix_plot(
         self, preds, test_labels, unique_labels, save_filename="confusion_matrix.png"
@@ -44,7 +44,7 @@ class ErrorAnalysis(object):
         cm = confusion_matrix(test_labels, preds)
         disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=unique_labels)
         disp.plot(xticks_rotation="vertical")
-        plt.tight_layout()
+        # plt.tight_layout()
         plt.show()
         save_path = os.path.join(self.save_dir, save_filename)
         plt.savefig(save_path)
@@ -95,7 +95,7 @@ class ErrorAnalysis(object):
         train_labels=None,
     ):
         if tokenizer == None:
-            tokenizer = AutoTokenizer.from_pretrained("roberta-base")
+            tokenizer = AutoTokenizer.from_pretrained("xlm-roberta-base")
 
         # decode all examples to find misclassified examples
         decoded_inputs = []
