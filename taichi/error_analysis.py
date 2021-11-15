@@ -37,7 +37,7 @@ class ErrorAnalysis(object):
     #     plt.show()
     #     save_path = os.path.join(self.save_dir, save_filename)
     #     fig.savefig(save_path)
-    def save_pr_curve_plot(self, preds, test_labels, unique_labels, save_path="./multiclass-pr-curve.png"):
+    def save_pr_curve_plot(self, preds, test_labels, unique_labels, save_filename="multiclass-pr-curve.png"):
 
         Y_test = label_binarize(test_labels, classes=range(len(unique_labels)))
         y_score = preds[:,:,0]
@@ -106,7 +106,7 @@ class ErrorAnalysis(object):
         ax.set_title("Extension of Precision-Recall curve to multi-class")
 
         plt.show()
-
+        save_path = os.path.join(self.save_dir, save_filename)
         plt.savefig(save_path)
 
 
