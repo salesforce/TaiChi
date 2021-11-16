@@ -24,20 +24,7 @@ class ErrorAnalysis(object):
         self.save_dir = save_dir
         os.makedirs(self.save_dir, exist_ok=True)
 
-    # def save_pr_curve_plot(
-    #     self, precision, recall, save_filename="pr-curve-plot.png"
-    # ):
-
-    #     fig, ax = plt.subplots()
-    #     display = PrecisionRecallDisplay(
-    #         recall=recall,
-    #         precision=precision
-    #     )
-    #     display.plot(ax=ax, name="precision-recall curve", color="blue")
-    #     plt.show()
-    #     save_path = os.path.join(self.save_dir, save_filename)
-    #     fig.savefig(save_path)
-    def save_pr_curve_plot(self, preds, test_labels, unique_labels, save_filename="multiclass-pr-curve.png"):
+    def save_pr_curve_plot(self, preds, test_labels, unique_labels, save_filename="pr-curve-plot.png"):
 
         Y_test = label_binarize(test_labels, classes=range(len(unique_labels)))
         y_score = preds[:,:,0]
@@ -62,50 +49,8 @@ class ErrorAnalysis(object):
             average_precision=average_precision["micro"],
         )
         display.plot()
-        _ = display.ax_.set_title("Micro-averaged over all classes")
-
-        # setup plot details
-        cmap = plt.cm.tab20
-        cmaplist = [cmap(i) for i in range(cmap.N)]
-        # create the new map
-        colors = cmaplist[:len(unique_labels)]
-
-        _, ax = plt.subplots(figsize=(14, 16))
-
-        f_scores = np.linspace(0.2, 1.0, num=5)
-        lines, labels = [], []
-        for f_score in f_scores:
-            x = np.linspace(0.01, 1)
-            y = f_score * x / (2 * x - f_score)
-            (l,) = plt.plot(x[y >= 0], y[y >= 0], color="gray", alpha=0.2)
-            plt.annotate("f1={0:0.1f}".format(f_score), xy=(0.9, y[45] + 0.02))
-
-        display = PrecisionRecallDisplay(
-            recall=recall["micro"],
-            precision=precision["micro"],
-            average_precision=average_precision["micro"],
-        )
-        display.plot(ax=ax, name="Micro-average precision-recall", color="gold")
-
-        for i, color in zip(range(len(unique_labels)), colors):
-            display = PrecisionRecallDisplay(
-                recall=recall[i],
-                precision=precision[i],
-                average_precision=average_precision[i],
-            )
-            display.plot(ax=ax, name=f"Precision-recall for class: {unique_labels[i]}", color=color)
-
-        # add the legend for the iso-f1 curves
-        handles, labels = display.ax_.get_legend_handles_labels()
-        handles.extend([l])
-        labels.extend(["iso-f1 curves"])
-        # set the legend and the axes
-        ax.set_xlim([0.0, 1.0])
-        ax.set_ylim([0.0, 1.05])
-        ax.legend(handles=handles, labels=labels, loc="best")
-        ax.set_title("Extension of Precision-Recall curve to multi-class")
-
-        plt.show()
+        _ = display.ax_.set_title("pr-curve averaged over all classes")
+        
         save_path = os.path.join(self.save_dir, save_filename)
         plt.savefig(save_path)
 
@@ -120,6 +65,7 @@ class ErrorAnalysis(object):
         plt.show()
         save_path = os.path.join(self.save_dir, save_filename)
         plt.savefig(save_path)
+
 
     def get_intent_classification_report(self, preds, test_labels, unique_labels):
         if len(unique_labels) not in set(preds):
@@ -142,6 +88,7 @@ class ErrorAnalysis(object):
         report_df = pd.DataFrame(report).transpose()
         return report_df
 
+
     def save_intent_classification_report(
         self,
         preds,
@@ -154,6 +101,7 @@ class ErrorAnalysis(object):
         )
         save_path = os.path.join(self.save_dir, save_filename)
         report_df.to_csv(save_path)
+
 
     def get_misclassified_instances(
         self,
@@ -222,6 +170,7 @@ class ErrorAnalysis(object):
             misclassified, columns=["utterance", "prediction", "ground_truth"]
         )
         return misclassified_df
+
 
     def save_misclassified_instances(
         self,
