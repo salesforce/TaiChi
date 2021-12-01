@@ -48,8 +48,8 @@
 **Modifying Config Parameters**
 
 1. We have individual config files containing hyperparameters for USLP and DNNC models. Please find below an example of the config file for USLP (the DNNC config file also has the same parameters):
-    1. ![Configuration](./readme/config.png)
-    2. Let us dive deeper into some of the individual parameters and groups of parameters to understand why they are needed
+    ![Configuration](./readme/config.png)
+    1. Let us dive deeper into some of the individual parameters and groups of parameters to understand why they are needed
         1. `bert-model` is for the pretrained tokenizer that we will be using to derive features from sequences
         2. `checkpoint_dir` is to save the model after training the model reformulating the classification task as an entailment prediction problem. We use `saved_model_path` for loading the trained model during evaluation. Therefore `checkpoint_dir` and `saved_model_path` are typically the same
         3. `train_data_path`, `test_data_path`, `ood_train_data_path` and `ood_test_data_path` are user defined paths for the model to know where to take the data from. One can see how the `save_dir` during the data sampling is used as input paths for our downstream classification task. One can adjust the paths per one’s convenience
