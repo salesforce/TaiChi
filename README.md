@@ -110,7 +110,8 @@ We also compare this with using off-the-shelf BERT model (`bert-base-uncased`) a
 |   |5	|0.8732	|0.737	|0.791	|
 |   |1	|NA	|NA	|NA	|
 
-** Testing **
+
+**Testing**
 
 To test if the models work as expected, please run `test_uslp.py` and `test_dnnc.py` which can be found in the `tests` directory.
 Please note that the config files (`test_uslp_config.json` and `test_dnnc_config.json`) would have to be altered accordingly to point to the model and data we use to evaluate the tests. For USLP, we run 1-shot experiment on CLINC150 and for DNNC, we run 5-shot experiment on CLINC150.
