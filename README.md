@@ -64,10 +64,30 @@
 **Run Code End-to-End**
 
 1. Please find a quick snapshot on how the USLP model can be trained as below
-    1. [Image: Screen Shot 2021-11-09 at 9.19.49 PM.png]
+    ```python
+    from taichi import uslp # import algorithm
+    
+    uslp_model = uslp.USLP() # instantiate the algorithm class (default config path set to uslp_config.json, user can set custom path)
+    
+    uslp_model.init() # initialize the data and model
+    
+    uslp_model.train() # model training
+    
+    uslp_model.eval() # model evaluation
+    ```
 
 1. DNNC has the same easy API signature for training and evaluation
-    1. [Image: Screen Shot 2021-11-09 at 9.11.04 PM.png]
+    ```python
+    from taichi import dnnc # import algorithm
+    
+    dnnc_model = dnnc.DNNC() # instantiate the algorithm class (default config path set to dnnc_config.json, user can set custom path)
+    
+    dnnc_model.init() # initialize the data and model
+    
+    dnnc_model.train() # model training
+    
+    dnnc_model.eval() # model evaluation
+    ```
 
 **Environment, Data, Model and Hyperparameters Summary**
 
@@ -120,6 +140,6 @@ Please note that the config files (`test_uslp_config.json` and `test_dnnc_config
 
 ### References
 
-1. USLP: [Few-Shot Intent Classification by Gauging Entailment Relationship Between Utterance and Semantic Label](https://aclanthology.org/2021.nlp4convai-1.2/) (
-2. DNNC: [Discriminative Nearest Neighbor Few-Shot Intent Detection by Transferring Natural Language Inference](https://arxiv.org/abs/2010.13009) 
+1. USLP:[Few-Shot Intent Classification by Gauging Entailment Relationship Between Utterance and Semantic Label](https://aclanthology.org/2021.nlp4convai-1.2/)
+2. DNNC:[Discriminative Nearest Neighbor Few-Shot Intent Detection by Transferring Natural Language Inference](https://arxiv.org/abs/2010.13009) 
 3. [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data)
