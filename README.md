@@ -19,7 +19,8 @@
 
 ![Algorithms](./readme/USLP_and_DNNC.png)
 1. As explained above, the difference between USLP and DNNC is that USLP reframes the classification task as an entailment prediction between query utterance and semantic label, while DNNC reframes the task as an entailment prediction between query and example utterances
-2. The USLP model is typically faster than DNNC in training as number of labels are usually lower than the number of examples
+2. The pretraining of the above NLI models is covered [here](https://github.com/salesforce/DNNC-few-shot-intent)
+3. The USLP model is typically faster than DNNC in training as number of labels are usually lower than the number of examples
 
 ### How to Run the Code
 
@@ -115,3 +116,10 @@ We also compare this with using off-the-shelf BERT model (`bert-base-uncased`) a
 
 To test if the models work as expected, please run `test_uslp.py` and `test_dnnc.py` which can be found in the `tests` directory.
 Please note that the config files (`test_uslp_config.json` and `test_dnnc_config.json`) would have to be altered accordingly to point to the model and data we use to evaluate the tests. For USLP, we run 1-shot experiment on CLINC150 and for DNNC, we run 5-shot experiment on CLINC150.
+
+
+### References
+
+1. [USLP Paper](https://aclanthology.org/2021.nlp4convai-1.2/)
+1. [DNNC Paper](https://arxiv.org/abs/2010.13009)
+1. [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data)
