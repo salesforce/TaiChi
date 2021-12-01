@@ -120,6 +120,6 @@ Please note that the config files (`test_uslp_config.json` and `test_dnnc_config
 
 ### References
 
-1. [Few-Shot Intent Classification by Gauging Entailment Relationship Between Utterance and Semantic Label](https://aclanthology.org/2021.nlp4convai-1.2/) (USLP Paper)
-1. [Discriminative Nearest Neighbor Few-Shot Intent Detection by Transferring Natural Language Inference](https://arxiv.org/abs/2010.13009) (DNNC Paper)
-1. [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data)
+1. USLP: [Few-Shot Intent Classification by Gauging Entailment Relationship Between Utterance and Semantic Label](https://aclanthology.org/2021.nlp4convai-1.2/) (
+2. DNNC: [Discriminative Nearest Neighbor Few-Shot Intent Detection by Transferring Natural Language Inference](https://arxiv.org/abs/2010.13009) 
+3. [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data)
