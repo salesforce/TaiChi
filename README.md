@@ -57,6 +57,7 @@
         6. `error_analysis` is a flag to indicate if the user is interested in some quick error analysis where on evaluation, the user can quickly gather where the model made mistakes (misclassifications), see a more detailed classification performance per class (classification report) and see visualizations in the form of confusion matrix for both in-domain and OOD samples. All these files get generated and saved in `error_analysis_dir`
         7. All other hyperparameters mentioned in the config are self explanatory and tweaking them can potentially help users in better performance on their datasets of choice
 
+**Note:** The paths for the model and data (parameters) will have to be modified by the user suitably in the config file to ensure smooth running of the library 
 **Run Code End-to-End**
 
 1. Please find a quick snapshot on how the USLP model can be trained as below
@@ -107,3 +108,7 @@ We also compare this with using off-the-shelf BERT model (`bert-base-uncased`) a
 |   |5	|0.8732	|0.737	|0.791	|
 |   |1	|NA	|NA	|NA	|
 
+** Testing **
+
+To test if the models work as expected, please run `test_uslp.py` and `test_dnnc.py` which can be found in the `tests` directory.
+Please note that the config files (`test_uslp_config.json` and `test_dnnc_config.json`) would have to be altered accordingly to point to the model and data we use to evaluate the tests. For USLP, we run 1-shot experiment on CLINC150 and for DNNC, we run 5-shot experiment on CLINC150.
