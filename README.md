@@ -131,6 +131,7 @@ We also compare this with using off-the-shelf BERT model (`bert-base-uncased`) a
 |   |5	|0.8732	|0.737	|0.791	|
 |   |1	|NA	|NA	|NA	|
 
+**Important:** Please note that these algorithms (DNNC in particular) are typically designed for and effective in few-shot settings and therefore might face memory issues for larger datasets.
 
 **Testing**
 
