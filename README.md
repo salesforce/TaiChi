@@ -113,7 +113,7 @@ Comparable results for USLP using Taichi to the results presented in the paper (
 |   |10	|0.892	|0.734	|0.854	|
 |   |5	|0.8354	|0.679	|0.857	|
 |   |1	|0.6667	|0.629	|0.664	|
-|DNNC   |full	|	|	|	|
+|DNNC   |full	|0.9489	|0.25	|0.996	|
 |   |10	|0.9203	|0.603	|0.933	|
 |   |5	|0.902	|0.789	|0.858	|
 |   |1	|NA	|NA	|NA	|
@@ -126,12 +126,12 @@ We also compare this with using off-the-shelf BERT model (`bert-base-uncased`) a
 |   |10	|0.8838	|0.738	|0.836	|
 |   |5	|0.8289	|0.772	|0.721	|
 |   |1	|0.6526	|0.66	|0.584	|
-|DNNC	|full	|	|	|	|
+|DNNC	|full	|0.9258	|0.2	|0.962	|
 |   |10	|0.9055	|0.58	|0.898	|
 |   |5	|0.8732	|0.737	|0.791	|
 |   |1	|NA	|NA	|NA	|
 
-**Important:** Please note that these algorithms (DNNC in particular) are typically designed for and effective in few-shot settings and therefore might face memory issues for larger datasets.
+**Important:** Please note that these algorithms (DNNC in particular) are typically designed for and effective in few-shot settings and therefore might face memory issues for larger datasets. For DNNC full-shot experiments, we reduced the number of negative pairs and processed the data in batches during training and inference.
 
 **Testing**
 
