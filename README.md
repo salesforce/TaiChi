@@ -126,7 +126,7 @@ We also compare this with using off-the-shelf BERT model (`bert-base-uncased`) a
 |   |10	|0.8838	|0.738	|0.836	|
 |   |5	|0.8289	|0.772	|0.721	|
 |   |1	|0.6526	|0.66	|0.584	|
-|DNNC	|full	|0.9258	|0.2	|0.962	|
+|DNNC	|full	|0.9258	|0.321	|0.968	|
 |   |10	|0.9055	|0.58	|0.898	|
 |   |5	|0.8732	|0.737	|0.791	|
 |   |1	|NA	|NA	|NA	|
