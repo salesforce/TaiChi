@@ -131,7 +131,20 @@ We also compare this with using off-the-shelf BERT model (`bert-base-uncased`) a
 |   |5	|0.8732	|0.737	|0.791	|
 |   |1	|NA	|NA	|NA	|
 
-**Important:** Please note that these algorithms (DNNC in particular) are typically designed for and effective in few-shot settings and therefore might face memory issues for larger datasets. For DNNC full-shot experiments, we reduced the number of negative pairs and processed the data in batches during training and inference.
+**Notes on Full-Shot DNNC Experiments**
+
+1. We faced OOM issues on running the DNNC code as is for these experiments. We tried the following as workaround:
+   1. We reduced the number of negative nli pairs by random subsampling, using a ratio of negative to positive pairs (50 for our experiments) as a variable
+   2. We processed the data in batches during training and inference
+2. We ran these experiments for 10 epochs and it took ~35 hours to train on an A100 GPU for both `roberta-base` and `bert-base-uncased` models
+   1. The OOD-recall results are lower most likely due to running these experiments on reduced number of epochs (10 as opposed to 200 for other experiments)
+   2. The training time naturally blows up due to the algorithm design of generating negative and positive nli pairs
+        1. If we consider CLINC150 full-shot experiment, the training data has 50 (m) examples per class and 150 classes (n) = 7500 examples (m * n)
+        2. If we consider one example out of them and pair them to get positive and negative NLI pairs based on whether they belong to the same class, we get (m-1) 49 positive pairs and (m * n - m) 7450 negative pairs. The ratio between them (m * n - m)/(m - 1) is approximately equal to n which is 150 (152.04 in this case)
+        3. If all pairs add up, the sheer number of examples makes it prohibitive to train the model and get results quickly.
+3. The tricks we implemented are NOT part of the DNNC code we share, which makes it important to emphasize that it may face memory and training time issues if used on a large dataset.
+
+
 
 **Testing**
 
