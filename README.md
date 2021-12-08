@@ -67,7 +67,7 @@
     ```python
     from taichi import uslp # import algorithm
     
-    uslp_model = uslp.USLP() # instantiate algorithm (default config path set to uslp_config.json, user can set custom path)
+    uslp_model = uslp.USLP() # instantiate algorithm (default config path set to ./taichi/uslp_config.json)
     
     uslp_model.init() # initialize the data and model
     
@@ -80,7 +80,7 @@
     ```python
     from taichi import dnnc # import algorithm
     
-    dnnc_model = dnnc.DNNC() # instantiate algorithm (default config path set to dnnc_config.json, user can set custom path)
+    dnnc_model = dnnc.DNNC() # instantiate algorithm (default config path set to ./taichi/dnnc_config.json)
     
     dnnc_model.init() # initialize the data and model
     
