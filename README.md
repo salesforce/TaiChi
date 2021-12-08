@@ -58,7 +58,7 @@
         6. `error_analysis` is a flag to indicate if the user is interested in some quick error analysis where on evaluation, the user can quickly gather where the model made mistakes (misclassifications), see a more detailed classification performance per class (classification report) and see visualizations in the form of confusion matrix for both in-domain and OOD samples. All these files get generated and saved in `error_analysis_dir`
         7. All other hyperparameters mentioned in the config are self explanatory and tweaking them can potentially help users in better performance on their datasets of choice
 
-**Note:** The paths for the model and data (parameters) will have to be modified by the user suitably in the config file to ensure smooth running of the library.
+**Note:** The paths for the model and data (parameters) are currently generically set and will have to be modified by the user suitably in the config file to ensure smooth running of the library.
 
 
 **Run Code End-to-End**
@@ -67,7 +67,7 @@
     ```python
     from taichi import uslp # import algorithm
     
-    uslp_model = uslp.USLP() # instantiate the algorithm class (default config path set to uslp_config.json, user can set custom path)
+    uslp_model = uslp.USLP() # instantiate algorithm (default config path set to uslp_config.json, user can set custom path)
     
     uslp_model.init() # initialize the data and model
     
@@ -80,7 +80,7 @@
     ```python
     from taichi import dnnc # import algorithm
     
-    dnnc_model = dnnc.DNNC() # instantiate the algorithm class (default config path set to dnnc_config.json, user can set custom path)
+    dnnc_model = dnnc.DNNC() # instantiate algorithm (default config path set to dnnc_config.json, user can set custom path)
     
     dnnc_model.init() # initialize the data and model
     
@@ -156,4 +156,4 @@ Please note that the config files (`test_uslp_config.json` and `test_dnnc_config
 
 1. USLP:[Few-Shot Intent Classification by Gauging Entailment Relationship Between Utterance and Semantic Label](https://aclanthology.org/2021.nlp4convai-1.2/)
 2. DNNC:[Discriminative Nearest Neighbor Few-Shot Intent Detection by Transferring Natural Language Inference](https://arxiv.org/abs/2010.13009) 
-3. [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data)
+3. CLINC150 [Dataset](https://github.com/clinc/oos-eval/tree/master/data)
