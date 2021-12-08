@@ -13,14 +13,28 @@
 1. Modular and extensible API design, “*from taichi import few_shot_learning_method”*
 2. Two few shot methods have been implemented, USLP + DNNC
 3. Supports quick data sampling and error analysis
-4. GitHub repo: [_https://github.com/MetaMind/taichi-internal_](https://github.com/MetaMind/taichi-internal)
+4. Active Development GitHub repo: [https://github.com/MetaMind/taichi-internal](https://github.com/MetaMind/taichi-internal)
+5. The data and pretrained nli models can be found in this [GCS bucket](https://console.cloud.google.com/storage/browser/sfr-few-shot-research)
 
 ### High Level Details on Algorithms
 
 ![Algorithms](./readme/USLP_and_DNNC_description.png)
 1. As explained above, the difference between USLP and DNNC is that USLP reframes the classification task as an entailment prediction between query utterance and semantic label, while DNNC reframes the task as an entailment prediction between query and example utterances
-2. The pretraining of the above NLI models is covered [here](https://github.com/salesforce/DNNC-few-shot-intent)
-3. The USLP model is typically faster than DNNC in training as number of labels are usually lower than the number of examples
+2. The original models used for nli-pretraining were [RoBERTa](https://arxiv.org/abs/1907.11692), [XLM-Roberta](https://arxiv.org/abs/1911.02116) and [MiniLM](https://arxiv.org/abs/2002.10957) distilled from XLM-RoBERTa
+3. Following table briefly describes their individual characteristics
+    |characteristics    |RoBERTa |XLM-RoBERTa   |MiniLM|
+    |---    |---    |---    |---    |
+    |description   |Baseline model  |This model supports multiple languages and can be considered a multilingual version of RoBERTa |This model is a leaner model with XLM-RoBERTa as teacher and is compressed with deep self-attention distillation|
+    |strength   |Strong performance on English datasets |Strong performance on multilingual datasets    |Competitive performance on multilingual datasets and low memory footprint  |
+    |weakness   |No support for multiple languages  |Bulky model    |Not as good as XLM-RoBERTa in performance  |
+    1. The pretraining of the above NLI models is covered [here](https://github.com/salesforce/DNNC-few-shot-intent)
+4. The USLP model is typically faster than DNNC in training as number of labels are usually lower than the number of examples
+ 
+
+### High Level Details on Data
+1. The original CLINC150 data file (`data_small.json`) used was in json format and was therefore preprocessed into corresponding csv with no headers and index
+2. We utilized the data sampling code to get our splits for training, testing and OOD from the json files into respective csv files
+3. We further processed the OOD files to remove the label column
 
 ### How to Run the Code
 
@@ -40,10 +54,10 @@
             1. Example: `book a ticket from San Francisco to New York,en_US,Book a Flight`
 1. Based on the data file and format received (csv/json), we can subsample the input data file and save it as csv or json in the path (`save_dir`) of our choice
     1. to save to csv, use the following command:
-        1. `dp.save_subsampled_data_to_csv(save_dir="/export/share/sharvin/clinc150_uci/1-shot", split='train', n_shot=1, is_json=True, random_state=42,  save_filename="train.csv")`
+        1. `dp.save_subsampled_data_to_csv(save_dir="./data/CLINC150/1-shot", split='train', n_shot=1, is_json=True, random_state=42,  save_filename="train.csv")`
             1. Here, the default split `train`  (will check for right split name and throw exception in case of incorrect split name; also does not matter if the data source is `csv`) in the `CLINC150` dataset json file (`is_json=True`, False in case of data source being a `csv` ) gets subsampled into `10` samples per class (will check if possible_ and saved in `os.path.join(save_dir, save_filename)`  creating the path if it doesn’t exist in the process as `csv` file in the format mentioned above in 2c
     2. we can save our file as json in much the same way with the following command:
-        1. `dp.save_subsampled_data_to_json(save_dir="/export/share/sharvin/clinc150_uci/1-shot", split='train', n_shot=1, is_json=True, random_state=42, orient='records', save_filename="1-shot-train.json")`
+        1. `dp.save_subsampled_data_to_json(save_dir="./data/CLINC150/1-shot", split='train', n_shot=1, is_json=True, random_state=42, orient='records', save_filename="1-shot-train.json")`
 
 **Modifying Config Parameters**
 
@@ -118,7 +132,7 @@ Comparable results for USLP using Taichi to the results presented in the paper (
 |   |5	|0.902	|0.789	|0.858	|
 |   |1	|NA	|NA	|NA	|
 
-We also compare this with using off-the-shelf BERT model (`bert-base-uncased`) and get the following results:
+We also compare this with using off-the-shelf (not NLI-pretrained) BERT model (`bert-base-uncased`) and get the following results:
 
 |model	|samples per class	|in-domain F1	|OOD-recall	|OOD-precision	|
 |---	|---	|---	|---	|---	|
@@ -154,6 +168,10 @@ Please note that the config files (`test_uslp_config.json` and `test_dnnc_config
 
 ### References
 
-1. USLP:[Few-Shot Intent Classification by Gauging Entailment Relationship Between Utterance and Semantic Label](https://aclanthology.org/2021.nlp4convai-1.2/)
-2. DNNC:[Discriminative Nearest Neighbor Few-Shot Intent Detection by Transferring Natural Language Inference](https://arxiv.org/abs/2010.13009) 
-3. CLINC150 [Dataset](https://github.com/clinc/oos-eval/tree/master/data)
+1. [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805)
+2. [RoBERTa: A Robustly Optimized BERT Pretraining Approach](https://arxiv.org/abs/1907.11692)
+3. [XLM-RoBERTa: Unsupervised Cross-lingual Representation Learning at Scale](https://arxiv.org/abs/1911.02116)
+4. [MiniLM: Deep Self-Attention Distillation for Task-Agnostic Compression of Pre-Trained Transformers](https://arxiv.org/abs/2002.10957)
+5. [USLP: Few-Shot Intent Classification by Gauging Entailment Relationship Between Utterance and Semantic Label](https://aclanthology.org/2021.nlp4convai-1.2/)
+6. [DNNC: Discriminative Nearest Neighbor Few-Shot Intent Detection by Transferring Natural Language Inference](https://arxiv.org/abs/2010.13009) 
+7. [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data)
