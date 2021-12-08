@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 ENTAILMENT = 0
 NON_ENTAILMENT = 1
 THRESHOLD_MIN = 0
-THRESHOLD_MAX = 0.99
+THRESHOLD_MAX = 1.0
 THRESHOLD_STEP = 0.01
 
 
@@ -484,13 +484,6 @@ class USLP(object):
             unique_labels,
             self.device,
         )
-
-        #if config.error_analysis:
-        #    res_id_thresholds = [res[0] for res in res_indomain]
-        #    res_id_precision = [res[2] for res in res_indomain]
-        #    res_id_recall = [res[3] for res in res_indomain]
-
-            #self.ea.save_pr_curve_plot(res_id_precision, res_id_recall)
 
         # compute index to print per threshold entered
         threshold_index = int(config.threshold * 100)
