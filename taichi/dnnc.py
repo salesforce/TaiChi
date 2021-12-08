@@ -52,7 +52,7 @@ ENTAILMENT = 0
 NON_ENTAILMENT = 1
 
 THRESHOLD_MIN = 0
-THRESHOLD_MAX = 0.99
+THRESHOLD_MAX = 1.0
 THRESHOLD_STEP = 0.01
 
 
@@ -254,7 +254,7 @@ class DNNC(object):
             shuffle=True,
         )
 
-        # oos_train_dataloader
+        # ood_train_dataloader
         ood_train_data = []
         with open(config.ood_train_data_path) as file:
             csv_file = csv.reader(file)
@@ -312,7 +312,7 @@ class DNNC(object):
             for lbl, lang in zip(self.test_labels, self.test_languages)
         ]
 
-        # load oos test dataloader
+        # load ood test dataloader
         self.ood_test_data = []
         with open(config.ood_test_data_path) as file:
             csv_file = csv.reader(file)
@@ -739,7 +739,7 @@ class DNNC(object):
                         ood_preds,
                         ood_gt,
                         ood_labels,
-                        save_filename="ood_confusion_matrix",
+                        save_filename="ood_confusion_matrix.png",
                     )
 
             recall = recall_score(ood_gt, ood_preds, zero_division=1)
