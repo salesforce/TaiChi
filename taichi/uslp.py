@@ -294,7 +294,7 @@ class USLP(object):
         # detect language and assign label2idx for individual languages appropriately
         self.unique_test_labels = lang2label
         self.test_labels = [
-            to_snake_case(l) for l in self.test_labels
+            _to_snake_case(l) for l in self.test_labels
         ]
         self.test_labels = [
             " ".join(l.split("_")).strip() if "_" in l else l for l in self.test_labels
