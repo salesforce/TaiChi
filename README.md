@@ -1,4 +1,4 @@
-# Taichi Documentation
+# TaiChi Documentation
 
 ### High Level Summary
 
@@ -22,11 +22,11 @@
 1. As explained above, the difference between USLP and DNNC is that USLP reframes the classification task as an entailment prediction between query utterance and semantic label, while DNNC reframes the task as an entailment prediction between query and example utterances
 2. The original models used for nli-pretraining were [RoBERTa](https://arxiv.org/abs/1907.11692), [XLM-Roberta](https://arxiv.org/abs/1911.02116) and [MiniLM](https://arxiv.org/abs/2002.10957) distilled from XLM-RoBERTa
 3. Following table briefly describes their individual characteristics
-    |characteristics    |RoBERTa |XLM-RoBERTa   |MiniLM|
+    |Characteristics    |RoBERTa |XLM-RoBERTa   |MiniLM|
     |---    |---    |---    |---    |
-    |description   |Baseline model  |This model supports multiple languages and can be considered a multilingual version of RoBERTa |This model is a leaner model with XLM-RoBERTa as teacher and is compressed with deep self-attention distillation|
-    |strength   |Strong performance on English datasets |Strong performance on multilingual datasets    |Competitive performance on multilingual datasets and low memory footprint  |
-    |weakness   |No support for multiple languages  |Bulky model    |Not as good as XLM-RoBERTa in performance  |
+    |Description   |Baseline model  |This model supports multiple languages and can be considered a multilingual version of RoBERTa |This model is a leaner model with XLM-RoBERTa as teacher and is compressed with deep self-attention distillation|
+    |Strength   |Strong performance on English datasets |Strong performance on multilingual datasets    |Competitive performance on multilingual datasets and low memory footprint  |
+    |Weakness   |No support for multiple languages  |Bulky model    |Not as good as XLM-RoBERTa in performance  |
     1. The pretraining of the above NLI models is covered [here](https://github.com/salesforce/DNNC-few-shot-intent)
 4. The USLP model is typically faster than DNNC in training as number of labels are usually lower than the number of examples
  
@@ -151,7 +151,7 @@ We also compare this with using off-the-shelf (not NLI-pretrained) BERT model (`
    1. We reduced the number of negative nli pairs by random subsampling, using a ratio of negative to positive pairs (50 for our experiments) as a variable
    2. We processed the data in batches during training and inference
 2. We ran these experiments for 10 epochs and it took ~35 hours to train on an A100 GPU for both `roberta-base` and `bert-base-uncased` models
-   1. The OOD-recall results are lower most likely due to running these experiments on reduced number of epochs (10 as opposed to 200 for other experiments)
+   1. The OOD-recall results are *worse (lower)* most likely due to running these experiments on reduced number of epochs (10 as opposed to 200 for other experiments)
    2. The training time naturally blows up due to the algorithm design of generating negative and positive nli pairs
         1. If we consider CLINC150 full-shot experiment, the training data has 50 (`m`) examples per class and 150 classes (`n`) = 7500 examples `(m * n)`
         2. If we consider one example out of them and pair them to get positive and negative NLI pairs based on whether they belong to the same class, we get `(m-1)` 49 positive pairs and `(m * n - m)` 7450 negative pairs. The ratio between them `(m * n - m)/(m - 1)` is approximately equal to `n` which is 150 (152.04 in this case)
