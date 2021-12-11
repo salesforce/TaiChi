@@ -1,7 +1,7 @@
 # TaiChi Documentation
 
 ### Introduction
-[Tai Chi](https://en.wikipedia.org/wiki/Tai_chi#),☯️, is known as a Chinese martial art. Tai Chi emphasizes on practicing "smart strength" like the leverage of joints to gain great power with small efforts. This philiosophy interestingly fits well into few shot learning research -- people try to train models with good performance using small amount of data through "smart tricks". [to be continued]
+[Tai Chi](https://en.wikipedia.org/wiki/Tai_chi#) ☯️ is known as a Chinese martial art. Tai Chi emphasizes on practicing "smart strength" like the leverage of joints to gain great power with small efforts. This philiosophy interestingly fits well into few shot learning research -- people try to train models with good performance using small amount of data through "smart tricks". [to be continued]
 
 **Enter Taichi - An open source Python library for few shot learning**
 
