@@ -1,19 +1,22 @@
 # TaiChi
 
 ### Introduction
-[Tai Chi](https://en.wikipedia.org/wiki/Tai_chi#) ☯️ , known as a Chinese martial art, emphasizes on practicing "smart strength" like the leverage of joints to gain great power with small efforts. This philiosophy interestingly fits perfectly into few-shot learning (FSL) research -- with "smart tricks", people try to train models with good performance using small amount of data. So we name our FSL library as Taichi in the hope that it will help your model training 
+[Tai Chi](https://en.wikipedia.org/wiki/Tai_chi#) ☯️ , known as a Chinese martial art, emphasizes on practicing "smart strength" like the leverage of joints to gain great power with small efforts. This philiosophy interestingly fits perfectly into few-shot learning (FSL) research -- with "smart tricks", people try to train models with good performance using small amount of data. So we name our FSL library as Taichi in the hope that it will help your model training in low data scenario. 
 
-Over last few years, we have seen great progress in FSL
+Over last few years, we have seen great progress in FSL research thanks to the work in pre-training, meta-learning, data augmentation, and public benchmark datasets. Since data collection and labeling are often expensive and time-consuming, breakthroughs in FSL research have huge potential use cases in ML/DL industry. The Salesforce Research team has also done a lot of FSL related projects for research and application purposes, please feel free to check out our publications in FSL and other areas [here](https://www.salesforceairesearch.com/research). 
 
-**Enter Taichi - An open source Python library for few shot learning**
+The Taichi library actually serves as an API hub for various effective methods proposed by the Salesforce Research team. We are currently releasing Taichi 1.0, which contains two main FSL methods: [DNNC](https://arxiv.org/abs/2010.13009) and [USLP](https://aclanthology.org/2021.nlp4convai-1.2/). These two methods are mainly for few-shot intent classification. We are working on including more useful FSL methods into Taichi, stay tuned for next release!
 
-1. Modular and extensible API design, “*from taichi import few_shot_learning_method”*
-2. Two few shot methods have been implemented, USLP + DNNC
-3. Supports quick data sampling and error analysis
-4. Active Development GitHub repo: [https://github.com/MetaMind/taichi-internal](https://github.com/MetaMind/taichi-internal)
-5. The data and pretrained nli models can be found in this [GCS bucket](https://console.cloud.google.com/storage/browser/sfr-few-shot-research)
+📋**Taichi 1.0 feature checklist**
 
-### High Level Details on Algorithms
+1. Pythonic API, “*from taichi import few_shot_learning_method”*
+2. Based on pyTorch and Huggingface [transformers](https://github.com/huggingface/transformers) library
+3. Included two recently published few-shot methods: [DNNC](https://arxiv.org/abs/2010.13009) and [USLP](https://aclanthology.org/2021.nlp4convai-1.2/)
+4. Data sampling and error analysis API
+5. Examples on [CLINC150](https://github.com/clinc/oos-eval/tree/master/data) dataset for quick start
+6. Pre-trained English and multi-lingual transformer models and pre-processed CLINC150 dataset [here](https://console.cloud.google.com/storage/browser/sfr-few-shot-research)
+
+### DNNC & USLP
 
 ![Algorithms](./readme/USLP_and_DNNC_description.png)
 1. As explained above, the difference between USLP and DNNC is that USLP reframes the classification task as an entailment prediction between query utterance and semantic label, while DNNC reframes the task as an entailment prediction between query and example utterances
