@@ -7,7 +7,7 @@ Over last few years, we have seen great progress in FSL research thanks to the w
 
 The Taichi library actually serves as an API hub for various effective methods proposed by the Salesforce Research team. We are currently releasing Taichi 1.0, which contains two main FSL methods: [DNNC](https://arxiv.org/abs/2010.13009) and [USLP](https://aclanthology.org/2021.nlp4convai-1.2/). These two methods are mainly for few-shot intent classification. We are working on including more useful FSL methods into Taichi, stay tuned for next release!
 
-📋**Taichi 1.0 feature checklist**
+### 📋 Taichi 1.0 feature checklist
 
 1. Pythonic API, “*from taichi import few_shot_learning_method”*
 2. Based on pyTorch and Huggingface [transformers](https://github.com/huggingface/transformers) library
@@ -16,19 +16,17 @@ The Taichi library actually serves as an API hub for various effective methods p
 5. Examples on [CLINC150](https://github.com/clinc/oos-eval/tree/master/data) dataset for quick start
 6. Pre-trained English and multi-lingual transformer models and pre-processed CLINC150 dataset [here](https://console.cloud.google.com/storage/browser/sfr-few-shot-research)
 
-### DNNC & USLP
-
+### ⚙️ Methods: DNNC & USLP
+The following figure provides a quick comparison of standard intent classification, DNNC, and USLP. In short, both DNNC and USLP are based upon NLI-style classification, DNNC reframes classification as entailment prediction between query and utterances in the training set while USLP tries to predict entailment relationship of utterance and semantic labels. Please refer to our [DNNC](https://arxiv.org/abs/2010.13009) and [USLP](https://aclanthology.org/2021.nlp4convai-1.2/) paper for more details.
 ![Algorithms](./readme/USLP_and_DNNC_description.png)
-1. As explained above, the difference between USLP and DNNC is that USLP reframes the classification task as an entailment prediction between query utterance and semantic label, while DNNC reframes the task as an entailment prediction between query and example utterances
-2. The original models used for nli-pretraining were [RoBERTa](https://arxiv.org/abs/1907.11692), [XLM-Roberta](https://arxiv.org/abs/1911.02116) and [MiniLM](https://arxiv.org/abs/2002.10957) distilled from XLM-RoBERTa
-3. Following table briefly describes their individual characteristics
-    |Characteristics    |RoBERTa |XLM-RoBERTa   |MiniLM|
-    |---    |---    |---    |---    |
-    |Description   |Baseline model  |This model supports multiple languages and can be considered a multilingual version of RoBERTa |This model is a leaner model with XLM-RoBERTa as teacher and is compressed with deep self-attention distillation|
-    |Strength   |Strong performance on English datasets |Strong performance on multilingual datasets    |Competitive performance on multilingual datasets and low memory footprint  |
-    |Weakness   |No support for multiple languages  |Bulky model    |Not as good as XLM-RoBERTa in performance  |
-    1. The pretraining of the above NLI models is covered [here](https://github.com/salesforce/DNNC-few-shot-intent)
-4. The USLP model is typically faster than DNNC in training as number of labels are usually lower than the number of examples
+
+### 🚀 Models
+We are also sharing the backbone models for DNNC and USLP. The models are based upon pubic pre-trained models from Huggingface and further tuned with NLI dataset to make them adapated to NLI-style classification.
+
+1.  [nli-pretrained-roberta-base](https://console.cloud.google.com/storage/browser/sfr-few-shot-research/model/nli-pretrained-roberta-base), English only model
+2.  [nli-pretrained-xlm-roberta-base](https://console.cloud.google.com/storage/browser/sfr-few-shot-research/model/nli-pretrained-xlm-roberta-base), based upon [XLM-RoBERTa](https://huggingface.co/docs/transformers/model_doc/xlmroberta) model, which supports 100 languages, can be used for multi/cross-lingual projects
+
+Please refer to the NLI pre-training pipeline [here](https://github.com/salesforce/DNNC-few-shot-intent) if you would like to pre-train a new model.
  
 
 ### High Level Details on Data
