@@ -33,7 +33,7 @@ We use [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data) fo
 
 ### 🤔 Undersanding Taichi 1.0 API
 
-**Data Sampling**
+**1. Data Sampling**
 
 1. The following step imports the Data Pipeline object for quick data sampling
     1. `from taichi.data_pipeline import DataPipeline`
@@ -54,7 +54,7 @@ We use [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data) fo
     2. we can save our file as json in much the same way with the following command:
         1. `dp.save_subsampled_data_to_json(save_dir="./data/CLINC150/1-shot", split='train', n_shot=1, is_json=True, random_state=42, orient='records', save_filename="1-shot-train.json")`
 
-**Modifying Config Parameters**
+**2. Modifying Config Parameters**
 
 1. We have individual config files containing hyperparameters for USLP and DNNC models. Please find below an example of the config file for USLP (the DNNC config file also has the same parameters):
     ![Configuration](./readme/config.png)
@@ -70,7 +70,7 @@ We use [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data) fo
 **Note:** The paths for the model and data (parameters) are currently generically set and will have to be modified by the user suitably in the config file to ensure smooth running of the library.
 
 
-**Run Code End-to-End**
+**3. Run Code End-to-End**
 
 1. Please find a quick snapshot on how the USLP model can be trained as below
     ```python
