@@ -27,14 +27,11 @@ We are also sharing the backbone models for DNNC and USLP. The models are based 
 2.  [nli-pretrained-xlm-roberta-base](https://console.cloud.google.com/storage/browser/sfr-few-shot-research/model/nli-pretrained-xlm-roberta-base), based upon [XLM-RoBERTa](https://huggingface.co/docs/transformers/model_doc/xlmroberta) model, which supports 100 languages, can be used for multi/cross-lingual projects
 
 Please refer to the NLI pre-training pipeline [here](https://github.com/salesforce/DNNC-few-shot-intent) if you would like to pre-train a new model.
- 
 
-### High Level Details on Data
-1. The original CLINC150 data file (`data_small.json`) used was in json format and was therefore preprocessed into corresponding csv with no headers and index
-2. We utilized the data sampling code to get our splits for training, testing and OOD from the json files into respective csv files
-3. We further processed the OOD files to remove the label column
+### 🛢 Data
+We use [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data) for benchmark and tutorials. The original `data_small.json` is sub-sampled and futher processed. User can download the processed dataset from [here](https://console.cloud.google.com/storage/browser/sfr-few-shot-research/data). 
 
-### How to Run the Code
+### 🤔 Undersanding Taichi 1.0 API
 
 **Data Sampling**
 
@@ -101,21 +98,16 @@ Please refer to the NLI pre-training pipeline [here](https://github.com/salesfor
     dnnc_model.eval() # model evaluation
     ```
 
-**Environment, Data, Model and Hyperparameters Summary**
-
-1. Used torch==1.7.1 AND transformers==4.5.1 **(same as paper)** versions for the experiments on an a100 GPU
-2. Used `data_small.json` from [CLINC150](https://github.com/clinc/oos-eval/tree/master/data) for benchmarking
-3. Model: `roberta-base` implementation from Huggingface
-4. Threshold: 0.01
-5. Train Batch Size: 128
-6. Num Train Epochs: 200
-7. Learning Rate: 5e-5
-8. No Data Augmentation
-
 **Results From Paper (*Focus on DNNC and USLP-T*)**
 ![paper-results](./readme/USLP_Paper_Results.png)
 
-**Results using Taichi Library**
+**Benchmark results on CLINC150**
+- Computing environment: torch==1.7.1, transformers==4.5.1, A100 GPU (user might expect results to vary with different versions/devices)
+- Hyper-parameter
+  - threshold: 0.01
+  - training batch size: 128
+  - epochs: 200
+  - learning rate: 5e-5
 
 Comparable results for USLP using Taichi to the results presented in the paper (USLP-T) for in-domain F1, OOD-Recall and OOD-Precision. Higher results for DNNC in comparison to results in the paper (DNNC) for in-domain F1 and OOD-Recall with comparable OOD-Precision.
 
