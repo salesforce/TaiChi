@@ -165,3 +165,8 @@ Please note that the config files (`test_uslp_config.json` and `test_dnnc_config
 5. [USLP: Few-Shot Intent Classification by Gauging Entailment Relationship Between Utterance and Semantic Label](https://aclanthology.org/2021.nlp4convai-1.2/)
 6. [DNNC: Discriminative Nearest Neighbor Few-Shot Intent Detection by Transferring Natural Language Inference](https://arxiv.org/abs/2010.13009) 
 7. [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data)
+
+
+### Contact
+Please email jqu@salesforce.com for questions or feedback.
+
