@@ -1,13 +1,13 @@
 # TaiChi
 
-### Introduction
+## Introduction
 [Tai Chi](https://en.wikipedia.org/wiki/Tai_chi#) ☯️ , known as a Chinese martial art, emphasizes on practicing "smart strength" like the leverage of joints to gain great power with small efforts. This philiosophy interestingly fits perfectly into few-shot learning (FSL) research -- with "smart tricks", people try to train models with good performance using small amount of data. So we name our FSL library as Taichi in the hope that it will help your model training in low data scenario. 
 
 Over last few years, we have seen great progress in FSL research thanks to the work in pre-training, meta-learning, data augmentation, and public benchmark datasets. Since data collection and labeling are often expensive and time-consuming, breakthroughs in FSL research have huge potential use cases in ML/DL industry. The Salesforce Research team has also done a lot of FSL related projects for research and application purposes, please feel free to check out our publications in FSL and other areas [here](https://www.salesforceairesearch.com/research). 
 
 The Taichi library actually serves as an API hub for various effective methods proposed by the Salesforce Research team. We are currently releasing Taichi 1.0, which contains two main FSL methods: [DNNC](https://arxiv.org/abs/2010.13009) and [USLP](https://aclanthology.org/2021.nlp4convai-1.2/). These two methods are mainly for few-shot intent classification. We are working on including more useful FSL methods into Taichi, stay tuned for next release!
 
-### 📋 Taichi 1.0 feature checklist
+## 📋 Taichi 1.0 feature checklist
 
 1. Pythonic API, “*from taichi import few_shot_learning_method”*
 2. Based on pyTorch and Huggingface [transformers](https://github.com/huggingface/transformers) library
@@ -16,11 +16,11 @@ The Taichi library actually serves as an API hub for various effective methods p
 5. Examples on [CLINC150](https://github.com/clinc/oos-eval/tree/master/data) dataset for quick start
 6. Pre-trained English and multi-lingual transformer models and pre-processed CLINC150 dataset [here](https://console.cloud.google.com/storage/browser/sfr-few-shot-research)
 
-### ⚙️ Methods: DNNC & USLP
+## ⚙️ Methods: DNNC & USLP
 The following figure provides a quick comparison of standard intent classification, DNNC, and USLP. In short, both DNNC and USLP are based upon NLI-style classification, DNNC reframes classification as entailment prediction between query and utterances in the training set while USLP tries to predict entailment relationship of utterance and semantic labels. Please refer to our [DNNC](https://arxiv.org/abs/2010.13009) and [USLP](https://aclanthology.org/2021.nlp4convai-1.2/) paper for more details.
 ![Algorithms](./readme/USLP_and_DNNC_description.png)
 
-### 🚀 Models
+## 🚀 Models
 We are also sharing the backbone models for DNNC and USLP. The models are based upon pubic pre-trained models from Huggingface and further tuned with NLI dataset to make them adapated to NLI-style classification.
 
 1.  [nli-pretrained-roberta-base](https://console.cloud.google.com/storage/browser/sfr-few-shot-research/model/nli-pretrained-roberta-base), English only model
@@ -28,10 +28,10 @@ We are also sharing the backbone models for DNNC and USLP. The models are based 
 
 Please refer to the NLI pre-training pipeline [here](https://github.com/salesforce/DNNC-few-shot-intent) if you would like to pre-train a new model.
 
-### 🛢 Data
+## 🛢 Data
 We use [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data) for benchmark and tutorials. The original `data_small.json` is sub-sampled and futher processed. User can download the processed dataset from [here](https://console.cloud.google.com/storage/browser/sfr-few-shot-research/data). 
 
-### 🤔 Undersanding Taichi 1.0 API
+## 🤔 Undersanding Taichi 1.0 API
 
 **1. Data Sampling**
 
@@ -156,7 +156,7 @@ To test if the models work as expected, please run `test_uslp.py` and `test_dnnc
 Please note that the config files (`test_uslp_config.json` and `test_dnnc_config.json`) would have to be altered accordingly to point to the model and data we use to evaluate the tests. For USLP, we run 1-shot experiment on CLINC150 and for DNNC, we run 5-shot experiment on CLINC150.
 
 
-### References
+## References
 
 1. [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805)
 2. [RoBERTa: A Robustly Optimized BERT Pretraining Approach](https://arxiv.org/abs/1907.11692)
@@ -167,6 +167,6 @@ Please note that the config files (`test_uslp_config.json` and `test_dnnc_config
 7. [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data)
 
 
-### Contact
+## Contact
 Please email jqu@salesforce.com for questions or feedback.
 
