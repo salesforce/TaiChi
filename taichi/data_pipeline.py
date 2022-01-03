@@ -70,7 +70,7 @@ class DataPipeline(object):
             )
             raise Exception(error_message)
 
-        df["language"] = self.language  # for clinc150, how to do for other languages?
+        df["language"] = self.language
         cols = list(df.columns)
         cols = cols[:1] + [cols[-1]] + cols[1:-1]
         df = df[cols]
