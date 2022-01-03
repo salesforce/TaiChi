@@ -16,8 +16,6 @@ class Config:
     x in config
     for k,v in config.items():
     should be supported
-
-    adapted from https://github.com/MetaMind/eloq_dial/blob/main/config.py
     """
 
     def __init__(self, dictionary: dict = None):
