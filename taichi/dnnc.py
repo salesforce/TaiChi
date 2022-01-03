@@ -29,8 +29,6 @@ from sklearn.metrics import (
     recall_score,
     confusion_matrix,
     ConfusionMatrixDisplay,
-    roc_curve,
-    RocCurveDisplay,
     precision_recall_curve,
     average_precision_score,
     PrecisionRecallDisplay,
