@@ -29,14 +29,10 @@ from sklearn.metrics import (
     recall_score,
     confusion_matrix,
     ConfusionMatrixDisplay,
-    roc_curve,
-    RocCurveDisplay,
     precision_recall_curve,
     average_precision_score,
     PrecisionRecallDisplay,
 )
-
-import matplotlib.pyplot as plt
 
 import copy
 
@@ -116,14 +112,6 @@ class USLP(object):
 
         self.train_data = train_data
 
-        # convert potential camelCase labels to snake_case
-        def _to_snake_case(name):
-            name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-            name = re.sub('__([A-Z])', r'_\1', name)
-            name = re.sub('([a-z0-9])([A-Z])', r'\1_\2', name)
-            return name.lower()
-
-        train_labels = [_to_snake_case(l) for l in train_labels]
         train_labels = [" ".join(l.split("_")).strip() for l in train_labels]
 
         aggregated_data_df["label"] = train_labels
