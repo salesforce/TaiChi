@@ -35,18 +35,18 @@ class ExperimentRunTest(unittest.TestCase):
         u.train()
         logger.info('model trained')
         logger.info('checking if trained model has been saved...')
-        self.assertTrue(os.path.exists(u.config.saved_model_path), 'saved model folder was not created!')
-        files = [f for f in os.walk(u.config.saved_model_path)]
-        self.assertEqual(len(files[0][-1]), 2, 'saved model file is missing!') # count files in saved_model_dir
+        self.assertTrue(os.path.exists(u.config.checkpoint_dir), 'model checkpoint directory was not created!')
+        files = [f for f in os.walk(u.config.checkpoint_dir)]
+        self.assertEqual(len(files[0][-1]), 2, 'model checkpoint files are missing!') # count files in saved_model_dir
         logger.info('model was saved successfully!')
         logger.info('begin the model evaluation...')
         u.eval()
         logger.info('checking if results have been saved...')
         self.assertTrue(os.path.exists(u.config.error_analysis_dir), 'error analysis folder was not created!')
         files = [f for f in os.walk(u.config.error_analysis_dir)]
-        self.assertEqual(len(files[0][-1]), 5, 'error analysis files are missing!') # count files in saved_model_dir
+        self.assertEqual(len(files[0][-1]), 5, 'error analysis files are missing!') # count files in error_analysis_dir
         self.assertTrue(os.path.exists(u.config.save_result_fp), 'results file missing') # check if result file created
-        shutil.rmtree(u.config.saved_model_path)
+        shutil.rmtree(u.config.checkpoint_dir)
         shutil.rmtree(u.config.error_analysis_dir)
         os.remove(u.config.save_result_fp)
         logger.info('testing completed!')

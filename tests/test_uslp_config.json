@@ -12,7 +12,6 @@
     "num_train_epochs": 200,
     "pretrained_model_path": "./model/nli-pretrained-roberta-base",
     "save_result_fp": "./data/CLINC150/1-shot/uslp_test_inference.json",
-    "saved_model_path": "./model/nli-pretrained-roberta-base/uslp-test",
     "seed": 42,
     "max_seq_length": 64,
     "test_batch_size": 128,
