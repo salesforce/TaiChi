@@ -450,7 +450,7 @@ class USLP(object):
 
         config = self.config
         model = AutoModelForSequenceClassification.from_pretrained(
-            config.saved_model_path
+            config.checkpoint_dir
         )
         model.to(self.device)
         language = self.test_languages[
