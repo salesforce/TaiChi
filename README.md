@@ -60,7 +60,7 @@ We use [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data) fo
     ![Configuration](./readme/config.png)
     1. Let us dive deeper into some of the individual parameters and groups of parameters to understand why they are needed
         1. `bert-model` is for the pretrained tokenizer that we will be using to derive features from sequences
-        2. `checkpoint_dir` is to save the model after training the model reformulating the classification task as an entailment prediction problem. We use `saved_model_path` for loading the trained model during evaluation. Therefore `checkpoint_dir` and `saved_model_path` are typically the same
+        2. `checkpoint_dir` is to save the model after training the model reformulating the classification task as an entailment prediction problem. We use the same path for loading the trained model during evaluation as well.
         3. `train_data_path`, `test_data_path`, `ood_train_data_path` and `ood_test_data_path` are user defined paths for the model to know where to take the data from. One can see how the `save_dir` during the data sampling is used as input paths for our downstream classification task. One can adjust the paths per one’s convenience
         4. `pretrained_model_path` is self explanatory as we mention the pretrained model path we intend to use to reformulate and train again as an entailment prediction problem
         5. `save_result_fp` is the path to store the inference results in terms of threshold, in-domain accuracy, precision, recall, and f1 macro along with ood-recall in a `json` format
