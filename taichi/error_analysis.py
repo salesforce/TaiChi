@@ -24,7 +24,7 @@ class ErrorAnalysis(object):
         self.save_dir = save_dir
         os.makedirs(self.save_dir, exist_ok=True)
 
-    def save_pr_curve_plot(self, preds, test_labels, unique_labels, save_filename="pr-curve-plot.png"):
+    def save_pr_curve_plot(self, preds, test_labels, unique_labels, save_filename="pr_curve_plot.png"):
 
         Y_test = label_binarize(test_labels, classes=range(len(unique_labels)))
         y_score = preds[:,:,0]
