@@ -59,7 +59,7 @@ class USLP(object):
     training and evaluation
     """
 
-    def __init__(self, config_file="./taichi/uslp_config.json"):
+    def __init__(self, config_file="./taichi/og_uslp_config.json"):
         with open(config_file, "r") as f:
             config_dict = json.loads(f.read())
         self.config = Config(config_dict)
@@ -281,9 +281,7 @@ class USLP(object):
 
         # detect language and assign label2idx for individual languages appropriately
         self.unique_test_labels = lang2label
-        self.test_labels = [
-            _to_snake_case(l) for l in self.test_labels
-        ]
+
         self.test_labels = [
             " ".join(l.split("_")).strip() if "_" in l else l for l in self.test_labels
         ]
