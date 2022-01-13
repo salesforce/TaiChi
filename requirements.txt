@@ -1,0 +1,9 @@
+numpy
+pandas
+torch==1.7.1
+transformers==4.5.1
+tokenizers==0.10.3
+tqdm
+scikit-learn
+matplotlib
+flask
