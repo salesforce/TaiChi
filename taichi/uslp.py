@@ -56,7 +56,7 @@ class USLP(object):
     USLP (Utterance Semantic Label Pair) training and evaluation pipeline
     """
 
-    def __init__(self, config_file="./taichi/og_uslp_config.json"):
+    def __init__(self, config_file="./taichi/uslp_config.json"):
         with open(config_file, "r") as f:
             config_dict = json.loads(f.read())
         self.config = Config(config_dict)
