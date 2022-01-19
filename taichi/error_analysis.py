@@ -55,16 +55,16 @@ class ErrorAnalysis(object):
         plt.savefig(save_path)
 
 
-    def save_confusion_matrix_plot(
-        self, preds, test_labels, unique_labels, save_filename="confusion_matrix.png"
-    ):
-        cm = confusion_matrix(test_labels, preds)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=unique_labels)
-        disp.plot(xticks_rotation="vertical")
-        # plt.tight_layout()
-        plt.show()
-        save_path = os.path.join(self.save_dir, save_filename)
-        plt.savefig(save_path)
+    # def save_confusion_matrix_plot(
+    #     self, preds, test_labels, unique_labels, save_filename="confusion_matrix.png"
+    # ):
+    #     cm = confusion_matrix(test_labels, preds)
+    #     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=unique_labels)
+    #     disp.plot(xticks_rotation="vertical")
+    #     # plt.tight_layout()
+    #     plt.show()
+    #     save_path = os.path.join(self.save_dir, save_filename)
+    #     plt.savefig(save_path)
 
 
     def get_intent_classification_report(self, preds, test_labels, unique_labels):

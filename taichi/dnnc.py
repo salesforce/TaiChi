@@ -27,8 +27,6 @@ from sklearn.metrics import (
     accuracy_score,
     precision_score,
     recall_score,
-    confusion_matrix,
-    ConfusionMatrixDisplay,
     precision_recall_curve,
     average_precision_score,
     PrecisionRecallDisplay,
@@ -631,9 +629,6 @@ class DNNC(object):
                     self.ea.save_intent_classification_report(
                         preds, test_labels, unique_labels
                     )
-                    self.ea.save_confusion_matrix_plot(
-                        preds, test_labels, unique_labels
-                    )
 
             acc = accuracy_score(test_labels, preds)
             prec = precision_score(test_labels, preds, average="macro", zero_division=1)
@@ -732,12 +727,6 @@ class DNNC(object):
                 if self.config.error_analysis:
                     self.ea.save_intent_classification_report(
                         ood_preds, ood_gt, ood_labels, save_filename="ood_report.csv"
-                    )
-                    self.ea.save_confusion_matrix_plot(
-                        ood_preds,
-                        ood_gt,
-                        ood_labels,
-                        save_filename="ood_confusion_matrix.png",
                     )
 
             recall = recall_score(ood_gt, ood_preds, zero_division=1)
