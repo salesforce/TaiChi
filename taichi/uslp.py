@@ -35,8 +35,7 @@ import copy
 
 from taichi.config import Config
 from taichi.error_analysis import ErrorAnalysis
-
-from utils import set_seed
+from taichi.utils import set_seed
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
