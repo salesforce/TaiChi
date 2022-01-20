@@ -192,7 +192,7 @@ class USLP(object):
 
         # prepare OOD data
         train_ood_df = pd.read_csv(config.ood_train_data_path, names=["utterance", "label"])
-        ood_train_data = ood_train_data.utterance.tolist()
+        ood_train_data = train_ood_df.utterance.tolist()
 
         ood_train_examples = []
         for e in ood_train_data:
