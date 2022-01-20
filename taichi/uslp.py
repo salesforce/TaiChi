@@ -196,7 +196,7 @@ class USLP(object):
 
         ood_train_examples = []
         for e in ood_train_data:
-            for l in unique_train_labels:
+            for l in unique_labels:
                 ood_train_examples.append((e, l))
 
         ood_train_features = self.tokenizer(
