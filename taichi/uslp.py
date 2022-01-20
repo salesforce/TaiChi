@@ -94,9 +94,9 @@ class USLP(object):
         self.tokenizer = AutoTokenizer.from_pretrained(config.model)
 
         # train_dataloader
-        aggregated_data_df = pd.read_csv(config.train_data_path)
-        train_data = list(aggregated_data_df.utterance)
-        train_labels = list(aggregated_data_df.label)
+        train_data_df = pd.read_csv(config.train_data_path, names=["utterance", "label"])
+        train_data = list(train_data_df.utterance)
+        train_labels = list(train_data_df.label)
 
         self.train_data = train_data
 
@@ -191,8 +191,8 @@ class USLP(object):
         )
 
         # prepare OOD data
-        train_ood_df = pd.read_csv(config.ood_train_data_path, header=None)
-        ood_train_data = ood_train_data.loc[:,0].tolist()
+        train_ood_df = pd.read_csv(config.ood_train_data_path, names=["utterance", "label"])
+        ood_train_data = ood_train_data.utterance.tolist()
 
         ood_train_examples = []
         for e in ood_train_data:
@@ -228,16 +228,16 @@ class USLP(object):
         )
 
         # prepare in-domain test data
-        test_df = pd.read_csv(config.test_data_path, header=None)
-        self.test_data, self.test_labels = test_df.loc[:,0].tolist(), test_df.loc[:,1].tolist()
+        test_df = pd.read_csv(config.test_data_path, names=["utterance", "label"])
+        self.test_data, self.test_labels = test_df.utterance.tolist(), test_df.label.tolist()
         self.test_labels = [
             " ".join(l.split("_")).strip() if "_" in l else l for l in self.test_labels
         ]
         self.test_label_ids = [label2idx[lbl] for lbl in self.test_labels]
 
         # preapare OOD test data
-        test_ood_df = pd.read_csv(config.ood_test_data_path, header=None)
-        self.ood_test_data = test_ood_df.loc[:,0].tolist()
+        test_ood_df = pd.read_csv(config.ood_test_data_path, names=["utterance", "label"])
+        self.ood_test_data = test_ood_df.utterance.tolist()
 
         self.model = AutoModelForSequenceClassification.from_pretrained(
             config.pretrained_model_path
