@@ -108,6 +108,10 @@ class USLP(object):
         label2idx = {}
         for i, l in enumerate(unique_labels):
             label2idx[l] = i
+        idx2label = {}
+        for i, l in enumerate(unique_labels):
+            idx2label[l] = i
+        self.idx2label = idx2label
 
         # postive examples in NLI format
         positive_train_examples = [
@@ -541,7 +545,7 @@ class USLP(object):
                         preds,
                         test_labels,
                         unique_labels,
-                        self.multilingual_idx2label,
+                        self.idx2label,
                         tokenizer=tokenizer,
                     )
                     self.ea.save_intent_classification_report(

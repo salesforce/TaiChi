@@ -109,7 +109,7 @@ class ErrorAnalysis(object):
         preds,
         test_labels,
         unique_labels,
-        multilingual_idx2label,
+        idx2label,
         language,
         tokenizer=None,
         train_labels=None,
@@ -135,8 +135,8 @@ class ErrorAnalysis(object):
                         misclassified.append(
                             (
                                 utterance,
-                                multilingual_idx2label[language][pred],
-                                multilingual_idx2label[language][test_label],
+                                idx2label[pred],
+                                idx2label[test_label],
                             )
                         )
                     else:
@@ -144,7 +144,7 @@ class ErrorAnalysis(object):
                             (
                                 utterance,
                                 "OOD",
-                                multilingual_idx2label[language][test_label],
+                                idx2label[test_label],
                             )
                         )
             else:
@@ -153,8 +153,8 @@ class ErrorAnalysis(object):
                         misclassified.append(
                             (
                                 utterance,
-                                multilingual_idx2label[language][train_labels[pred]],
-                                multilingual_idx2label[language][test_label],
+                                idx2label[train_labels[pred]],
+                                idx2label[test_label],
                             )
                         )
                     else:
@@ -162,7 +162,7 @@ class ErrorAnalysis(object):
                             (
                                 utterance,
                                 "OOD",
-                                multilingual_idx2label[language][test_label],
+                                idx2label[test_label],
                             )
                         )
 
@@ -178,7 +178,7 @@ class ErrorAnalysis(object):
         preds,
         test_labels,
         unique_labels,
-        multilingual_idx2label,
+        idx2label,
         language,
         tokenizer=None,
         train_labels=None,
@@ -190,7 +190,7 @@ class ErrorAnalysis(object):
             preds,
             test_labels,
             unique_labels,
-            multilingual_idx2label,
+            idx2label,
             language,
             tokenizer=None,
             train_labels=train_labels,
