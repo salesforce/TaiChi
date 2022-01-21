@@ -104,6 +104,7 @@ class USLP(object):
 
         # get unique labels and make sure the order stays consistent by sorting
         unique_labels = sorted(list(set(train_labels)))
+        self.unique_labels = unique_labels
         label2idx = {}
         for i, l in enumerate(unique_labels):
             label2idx[l] = i
