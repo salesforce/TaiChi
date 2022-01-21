@@ -378,7 +378,7 @@ class USLP(object):
         # save model when finish
         if config.checkpoint_dir:
             if not os.path.isdir(config.checkpoint_dir):
-                os.mkdir(config.checkpoint_dir)
+                os.mkdirs(config.checkpoint_dir)
             model.save_pretrained(config.checkpoint_dir)
 
         progress_bar.close()
