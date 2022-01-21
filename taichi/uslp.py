@@ -110,7 +110,7 @@ class USLP(object):
             label2idx[l] = i
         idx2label = {}
         for i, l in enumerate(unique_labels):
-            idx2label[l] = i
+            idx2label[i] = l
         self.idx2label = idx2label
 
         # postive examples in NLI format
