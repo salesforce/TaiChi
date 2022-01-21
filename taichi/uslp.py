@@ -252,7 +252,7 @@ class USLP(object):
         model.to(self.device)
 
         num_train_optimization_steps = (
-            len(self.pos_train_dataloader) * config.num_train_epochs
+            len(self.pos_train_dataloader) * config.num_train_epochs / config.gradient_accumulation_steps
         )
 
         param_optimizer = list(model.named_parameters())
@@ -289,7 +289,7 @@ class USLP(object):
         )
 
         # loss function
-        loss_fct = nn.CrossEntropyLoss()
+        loss_fct = nn.CrossEntropyLoss() / config.gradient_accumulation_steps
 
         # training pipeline
         logger.info("***** Running training *****")
@@ -301,7 +301,7 @@ class USLP(object):
             total=num_train_optimization_steps, dynamic_ncols=True, initial=0
         )
         for epoch in range(config.num_train_epochs):
-            for _, pos_batch in enumerate(self.pos_train_dataloader):
+            for step, pos_batch in enumerate(self.pos_train_dataloader):
                 model.train()
                 neg_batch = next(iter(self.neg_train_dataloader))
                 ood_batch = next(iter(self.ood_train_dataloader))
@@ -355,10 +355,11 @@ class USLP(object):
                 loss = loss_fct(logits.view(-1, 2), labels.view(-1))
 
                 # backward
-                optimizer.zero_grad()
                 loss.backward()
-                optimizer.step()
-                scheduler.step()
+                if step > 0 and step % config.gradient_accumulation_steps == 0:
+                    optimizer.zero_grad()
+                    optimizer.step()
+                    scheduler.step()
 
                 preds = logits.cpu().detach().numpy()
                 preds = np.argmax(preds, axis=1)
