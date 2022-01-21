@@ -110,7 +110,6 @@ class ErrorAnalysis(object):
         test_labels,
         unique_labels,
         idx2label,
-        language,
         tokenizer=None,
         train_labels=None,
     ):
@@ -179,7 +178,6 @@ class ErrorAnalysis(object):
         test_labels,
         unique_labels,
         idx2label,
-        language,
         tokenizer=None,
         train_labels=None,
         save_filename="misclassified_examples.csv",
@@ -191,7 +189,6 @@ class ErrorAnalysis(object):
             test_labels,
             unique_labels,
             idx2label,
-            language,
             tokenizer=None,
             train_labels=train_labels,
         )
