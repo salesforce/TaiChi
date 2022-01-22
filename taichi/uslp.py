@@ -294,7 +294,7 @@ class USLP(object):
         )
 
         # loss function
-        loss_fct = nn.CrossEntropyLoss() / config.gradient_accumulation_steps
+        loss_fct = nn.CrossEntropyLoss()
 
         # training pipeline
         logger.info("***** Running training *****")
@@ -357,7 +357,7 @@ class USLP(object):
                     attention_mask=attention_mask,
                     token_type_ids=token_type_ids,
                 )[0]
-                loss = loss_fct(logits.view(-1, 2), labels.view(-1))
+                loss = loss_fct(logits.view(-1, 2), labels.view(-1)) / config.gradient_accumulation_steps
 
                 # backward
                 loss.backward()
