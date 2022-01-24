@@ -1,6 +1,5 @@
 import os
 import sys
-import csv
 import json
 import logging
 import random
@@ -35,7 +34,7 @@ from sklearn.metrics import (
 import copy
 
 from taichi.config import Config
-from taichi.error_analysis import ErrorAnalysis
+from taichi.utils import set_seed
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
@@ -73,7 +72,6 @@ class DNNC(object):
         self.ood_train_dataloader = None
         # test parameters
         self.test_data = None
-        self.unique_test_labels = None
         self.test_labels = None
         self.test_label_ids = None
         self.ood_test_data = None
@@ -93,47 +91,30 @@ class DNNC(object):
         logger.info("device: {}".format(self.device))
 
         # set up seeds
-        np.random.seed(config.seed)
-        random.seed(config.seed)
-        torch.manual_seed(config.seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+        set_seed(config.seed)
 
         # load tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(config.bert_model)
 
         # train_dataloader
         aggregated_data_df = pd.read_csv(
-            config.train_data_path, names=["utterance", "language", "label"]
+            config.train_data_path, names=["utterance", "label"]
         )
         self.train_data = list(aggregated_data_df.utterance)
         self.train_labels = list(aggregated_data_df.label)
         self.train_languages = list(aggregated_data_df.language)
 
-        unique_languages = sorted(list(set(self.train_languages)))
-
-        # map languages to unique labels it contains examples of in the data
-        lang2label = {}
-        for language in unique_languages:
-            lang_df = aggregated_data_df.loc[aggregated_data_df.language == language]
-            lang2label[language] = sorted(list(set(lang_df.label)))
-
-        multilingual_label2idx = {}
-        self.multilingual_idx2label = {}
-        for language, labels in lang2label.items():
-            if language not in multilingual_label2idx:
-                multilingual_label2idx[language] = {}
-                self.multilingual_idx2label[language] = {}
-                for index, label in enumerate(labels):
-                    multilingual_label2idx[language][label] = index
-                    self.multilingual_idx2label[language][index] = label
-
-        self.train_label_ids = [
-            multilingual_label2idx[lang][lbl]
-            for lbl, lang in zip(self.train_labels, self.train_languages)
-        ]
         # get unique labels and make sure the order stays consistent by sorting
         unique_train_labels = sorted(list(set(self.train_labels)))
+        unique_labels = sorted(list(set(train_labels)))
+        self.unique_labels = unique_labels
+        label2idx = {}
+        for i, l in enumerate(unique_labels):
+            label2idx[l] = i
+        idx2label = {}
+        for i, l in enumerate(unique_labels):
+            idx2label[i] = l
+        self.idx2label = idx2label
 
         # create positive and negative train examples - assumes the language throughout is same
         positive_train_examples = []
@@ -147,16 +128,14 @@ class DNNC(object):
                     positive_train_examples.append(
                         (
                             self.train_data[i],
-                            self.train_data[j],
-                            self.train_languages[j],
+                            self.train_data[j]
                         )
                     )
 
                     positive_train_examples.append(
                         (
                             self.train_data[j],
-                            self.train_data[i],
-                            self.train_languages[i],
+                            self.train_data[i]
                         )
                     )
 
@@ -164,8 +143,7 @@ class DNNC(object):
                     negative_train_examples.append(
                         (
                             self.train_data[i],
-                            self.train_data[j],
-                            self.train_languages[i],
+                            self.train_data[j]
                         )
                     )
 
@@ -251,12 +229,8 @@ class DNNC(object):
         )
 
         # ood_train_dataloader
-        ood_train_data = []
-        with open(config.ood_train_data_path) as file:
-            csv_file = csv.reader(file)
-            for line in csv_file:
-                ood_train_data.append(line[0])
-        ood_train_examples = []
+        train_ood_df = pd.read_csv(config.ood_train_data_path, names=["utterance", "label"])
+        ood_train_data = train_ood_df.utterance.tolist()
 
         # for dnnc, unique train labels should get replaced by train data
         for e in ood_train_data:
@@ -291,44 +265,28 @@ class DNNC(object):
             ood_train_dataset, batch_size=config.train_batch_size // 4, shuffle=True
         )
 
-        # load test dataloader
-        self.test_data, self.test_labels, self.test_languages = [], [], []
-        with open(config.test_data_path) as file:
-            csv_file = csv.reader(file)
-            for line in csv_file:
-                self.test_data.append(line[0])
-                self.test_languages.append(line[1])
-                self.test_labels.append(line[2])
-
-        # detect language based on assumption that test data would have only one language
-
-        self.unique_test_labels = lang2label
-        self.test_label_ids = [
-            multilingual_label2idx[lang][lbl]
-            for lbl, lang in zip(self.test_labels, self.test_languages)
+        # prepare in-domain test data
+        test_df = pd.read_csv(config.test_data_path, names=["utterance", "label"])
+        self.test_data, self.test_labels = test_df.utterance.tolist(), test_df.label.tolist()
+        self.test_labels = [
+            " ".join(l.split("_")).strip() if "_" in l else l for l in self.test_labels
         ]
+        self.test_label_ids = [label2idx[lbl] for lbl in self.test_labels]
 
-        # load ood test dataloader
-        self.ood_test_data = []
-        with open(config.ood_test_data_path) as file:
-            csv_file = csv.reader(file)
-            for line in csv_file:
-                self.ood_test_data.append(line[0])
+        # preapare OOD test data
+        test_ood_df = pd.read_csv(config.ood_test_data_path, names=["utterance", "label"])
+        self.ood_test_data = test_ood_df.utterance.tolist()
 
+        # prepare model
         self.model = AutoModelForSequenceClassification.from_pretrained(
             config.pretrained_model_path
         )
-
-        if config.error_analysis:
-            self.ea = ErrorAnalysis(config.error_analysis_dir)
 
     def train(self):
         # load pretrained NLI model
         config = self.config
         model = self.model
-        if config.freeze_embedding:
-            for p in model.roberta.embeddings.parameters():
-                p.requires_grad = False
+
         model.to(self.device)
 
         num_train_optimization_steps = (
@@ -382,7 +340,7 @@ class DNNC(object):
             total=num_train_optimization_steps, dynamic_ncols=True, initial=0
         )
         for epoch in range(config.num_train_epochs):
-            for _, pos_batch in enumerate(self.pos_train_dataloader):
+            for step, pos_batch in enumerate(self.pos_train_dataloader):
                 model.train()
                 neg_batch = next(iter(self.neg_train_dataloader))
                 ood_batch = next(iter(self.ood_train_dataloader))
@@ -431,13 +389,14 @@ class DNNC(object):
                     attention_mask=attention_mask,
                     token_type_ids=token_type_ids,
                 )[0]
-                loss = loss_fct(logits.view(-1, 2), labels.view(-1))
+                loss = loss_fct(logits.view(-1, 2), labels.view(-1)) / config.gradient_accumulation_steps
 
                 # backward
-                optimizer.zero_grad()
                 loss.backward()
-                optimizer.step()
-                scheduler.step()
+                if step % config.gradient_accumulation_steps == 0:
+                    optimizer.step()
+                    scheduler.step()
+                    optimizer.zero_grad()
 
                 preds = logits.cpu().detach().numpy()
                 preds = np.argmax(preds, axis=1)
@@ -456,7 +415,7 @@ class DNNC(object):
             # save model when finish
             if config.checkpoint_dir and epoch == config.num_train_epochs - 1:
                 if not os.path.isdir(config.checkpoint_dir):
-                    os.mkdir(config.checkpoint_dir)
+                    os.makedirs(config.checkpoint_dir)
                 model.save_pretrained(config.checkpoint_dir)
 
         progress_bar.close()
@@ -468,16 +427,10 @@ class DNNC(object):
             config.checkpoint_dir
         )
         model.to(self.device)
-        language = self.test_languages[0]
-        unique_labels = self.unique_test_labels[language]
-        if config.transform_labels:
-            unique_labels = [
-                str(multilingual_label2idx[language][l])
-                for l in self.unique_test_labels[language]
-            ]
+        unique_labels = self.unique_labels
+
         res_indomain, prob_indomain = self._evaluation_indomain(
             model,
-            language,
             self.test_data,
             self.test_label_ids,
             self.tokenizer,
@@ -485,6 +438,7 @@ class DNNC(object):
             self.train_label_ids,
             unique_labels,
             self.device,
+            self.config.test_batch_size
         )
         # compute index to print per threshold entered
         threshold_index = int(config.threshold * 100)
@@ -493,12 +447,12 @@ class DNNC(object):
         )
         res_ood_recall, prob_ood = self._evaluation_ood_recall(
             model,
-            language,
             self.ood_test_data,
             self.tokenizer,
             self.train_data,
             unique_labels,
             self.device,
+            self.config.test_batch_size
         )
 
         res_ood_prec_f1 = self._evaluation_ood_precision_f1(prob_indomain, prob_ood)
@@ -539,7 +493,6 @@ class DNNC(object):
     def _evaluation_indomain(
         self,
         model,
-        language,
         test_data,
         test_labels,
         tokenizer,
@@ -547,7 +500,7 @@ class DNNC(object):
         train_labels,
         unique_labels,
         device,
-        eval_batch_size=128,
+        eval_batch_size=128
     ):
         model.eval()
 
@@ -576,7 +529,6 @@ class DNNC(object):
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
-        encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
                 if self.is_bert_type_tokenizer != True:
@@ -584,9 +536,6 @@ class DNNC(object):
                     token_type_ids = None
                 else:
                     input_ids, attention_mask, token_type_ids = batch
-                if self.config.error_analysis:
-                    for i, input_id in enumerate(input_ids):
-                        encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
                 if self.is_bert_type_tokenizer == True:
@@ -614,22 +563,6 @@ class DNNC(object):
                 else:
                     preds.append(len(unique_labels))
 
-            if threshold == self.config.threshold:
-                if self.config.error_analysis:
-                    # default save path used here, set own path by assigning custom save_path argument
-                    self.ea.save_misclassified_instances(
-                        encoded_inputs,
-                        preds,
-                        test_labels,
-                        unique_labels,
-                        self.multilingual_idx2label,
-                        language,
-                        tokenizer=tokenizer,
-                    )
-                    self.ea.save_intent_classification_report(
-                        preds, test_labels, unique_labels
-                    )
-
             acc = accuracy_score(test_labels, preds)
             prec = precision_score(test_labels, preds, average="macro", zero_division=1)
             recall = recall_score(test_labels, preds, average="macro", zero_division=1)
@@ -640,7 +573,6 @@ class DNNC(object):
     def _evaluation_ood_recall(
         self,
         model,
-        language,
         ood_test_data,
         tokenizer,
         train_data,
@@ -677,7 +609,6 @@ class DNNC(object):
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
-        encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
                 if self.is_bert_type_tokenizer != True:
@@ -685,9 +616,6 @@ class DNNC(object):
                     token_type_ids = None
                 else:
                     input_ids, attention_mask, token_type_ids = batch
-                if self.config.error_analysis:
-                    for i, input_id in enumerate(input_ids):
-                        encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
                 if self.is_bert_type_tokenizer == True:
@@ -720,14 +648,6 @@ class DNNC(object):
                 else:
                     preds.append(len(unique_labels))
                     ood_preds.append(NON_ENTAILMENT)
-
-            if threshold == self.config.threshold:
-
-                ood_labels = ["NOT OOD", "OOD"]
-                if self.config.error_analysis:
-                    self.ea.save_intent_classification_report(
-                        ood_preds, ood_gt, ood_labels, save_filename="ood_report.csv"
-                    )
 
             recall = recall_score(ood_gt, ood_preds, zero_division=1)
             res.append((threshold, recall))

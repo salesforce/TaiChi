@@ -68,7 +68,6 @@ class USLP(object):
         self.ood_train_dataloader = None
         # test parameters
         self.test_data = None
-        self.unique_test_labels = None
         self.test_label_ids = None
         self.ood_test_data = None
 
@@ -490,7 +489,6 @@ class USLP(object):
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
-        encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
                 if self.is_bert_type_tokenizer != True:
@@ -498,9 +496,6 @@ class USLP(object):
                     token_type_ids = None
                 else:
                     input_ids, attention_mask, token_type_ids = batch
-                if self.config.error_analysis:
-                    for i, input_id in enumerate(input_ids):
-                        encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
                 if self.is_bert_type_tokenizer == True:
@@ -575,7 +570,6 @@ class USLP(object):
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
-        encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
                 if self.is_bert_type_tokenizer != True:
@@ -583,9 +577,6 @@ class USLP(object):
                     token_type_ids = None
                 else:
                     input_ids, attention_mask, token_type_ids = batch
-                if self.config.error_analysis:
-                    for i, input_id in enumerate(input_ids):
-                        encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
                 if self.is_bert_type_tokenizer == True:
