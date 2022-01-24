@@ -102,7 +102,6 @@ class DNNC(object):
         )
         self.train_data = list(aggregated_data_df.utterance)
         self.train_labels = list(aggregated_data_df.label)
-        self.train_languages = list(aggregated_data_df.language)
 
         # get unique labels and make sure the order stays consistent by sorting
         unique_train_labels = sorted(list(set(self.train_labels)))
@@ -116,7 +115,7 @@ class DNNC(object):
             idx2label[i] = l
         self.idx2label = idx2label
 
-        # create positive and negative train examples - assumes the language throughout is same
+        # create positive and negative train examples
         positive_train_examples = []
         negative_train_examples = []
         for i in range(len(self.train_data)):
@@ -146,10 +145,6 @@ class DNNC(object):
                             self.train_data[j]
                         )
                     )
-
-        # modify positive and negative examples to remove the language element
-        positive_train_examples = [(d[0], d[1]) for d in positive_train_examples]
-        negative_train_examples = [(d[0], d[1]) for d in negative_train_examples]
 
         positive_train_features = self.tokenizer(
             positive_train_examples,
