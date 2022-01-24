@@ -104,8 +104,7 @@ class DNNC(object):
         self.train_labels = list(aggregated_data_df.label)
 
         # get unique labels and make sure the order stays consistent by sorting
-        unique_train_labels = sorted(list(set(self.train_labels)))
-        unique_labels = sorted(list(set(train_labels)))
+        unique_labels = sorted(list(set(self.train_labels)))
         self.unique_labels = unique_labels
         label2idx = {}
         for i, l in enumerate(unique_labels):
