@@ -256,9 +256,7 @@ class USLP(object):
         model = self.model
         model.to(self.device)
 
-        num_train_optimization_steps = (
-            len(self.pos_train_dataloader) * config.num_train_epochs / config.gradient_accumulation_steps
-        )
+        num_train_optimization_steps = len(self.pos_train_dataloader) * config.num_train_epochs
 
         param_optimizer = list(model.named_parameters())
         no_decay = ["bias", "LayerNorm.bias", "LayerNorm.weight"]
@@ -285,6 +283,7 @@ class USLP(object):
         optimizer = AdamW(
             optimizer_grouped_parameters, lr=config.learning_rate, eps=1e-8
         )
+
         scheduler = get_linear_schedule_with_warmup(
             optimizer,
             num_warmup_steps=int(
@@ -361,10 +360,10 @@ class USLP(object):
 
                 # backward
                 loss.backward()
-                if step > 0 and step % config.gradient_accumulation_steps == 0:
-                    optimizer.zero_grad()
+                if step % config.gradient_accumulation_steps == 0:
                     optimizer.step()
                     scheduler.step()
+                    optimizer.zero_grad()
 
                 preds = logits.cpu().detach().numpy()
                 preds = np.argmax(preds, axis=1)
@@ -405,6 +404,7 @@ class USLP(object):
             self.tokenizer,
             unique_labels,
             self.device,
+            config.test_batch_size
         )
 
         # compute index to print per threshold entered
@@ -419,6 +419,7 @@ class USLP(object):
             self.tokenizer,
             unique_labels,
             self.device,
+            config.test_batch_size
         )
 
         res_ood_prec_f1 = self._evaluation_ood_precision_f1(prob_indomain, prob_ood)
