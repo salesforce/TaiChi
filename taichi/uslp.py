@@ -34,7 +34,6 @@ from sklearn.metrics import (
 import copy
 
 from taichi.config import Config
-from taichi.error_analysis import ErrorAnalysis
 from taichi.utils import set_seed
 
 logging.basicConfig(
@@ -247,9 +246,6 @@ class USLP(object):
         self.model = AutoModelForSequenceClassification.from_pretrained(
             config.pretrained_model_path
         )
-
-        if config.error_analysis:
-            self.ea = ErrorAnalysis(config.error_analysis_dir)
 
     def train(self):
         config = self.config
@@ -525,9 +521,6 @@ class USLP(object):
         max_prob = np.max(preds[:, :, 0], axis=1)
 
 
-        if self.config.error_analysis:
-            self.ea.save_pr_curve_plot(preds, test_labels, unique_labels)
-
         res = []
         for threshold in np.arange(THRESHOLD_MIN, THRESHOLD_MAX, THRESHOLD_STEP):
             preds = []
@@ -536,22 +529,6 @@ class USLP(object):
                     preds.append(pred_label)
                 else:
                     preds.append(len(unique_labels))
-
-            # save classification report for user specified threshold
-            if threshold == self.config.threshold:
-                if self.config.error_analysis:
-                    # default save path used here, set own path by assigning custom save_path argument
-                    self.ea.save_misclassified_instances(
-                        encoded_inputs,
-                        preds,
-                        test_labels,
-                        unique_labels,
-                        self.idx2label,
-                        tokenizer=tokenizer,
-                    )
-                    self.ea.save_intent_classification_report(
-                        preds, test_labels, unique_labels
-                    )
 
             acc = accuracy_score(test_labels, preds)
             prec = precision_score(test_labels, preds, average="macro", zero_division=1)
@@ -641,14 +618,6 @@ class USLP(object):
                 else:
                     preds.append(len(unique_labels))
                     ood_preds.append(NON_ENTAILMENT)
-
-            if threshold == self.config.threshold:
-
-                ood_labels = ["NOT OOD", "OOD"]
-                if self.config.error_analysis:
-                    self.ea.save_intent_classification_report(
-                        ood_preds, ood_gt, ood_labels, save_filename="ood_report.csv"
-                    )
 
             recall = recall_score(ood_gt, ood_preds, zero_division=1)
             res.append((threshold, recall))
