@@ -263,9 +263,6 @@ class DNNC(object):
         # prepare in-domain test data
         test_df = pd.read_csv(config.test_data_path, names=["utterance", "label"])
         self.test_data, self.test_labels = test_df.utterance.tolist(), test_df.label.tolist()
-        self.test_labels = [
-            " ".join(l.split("_")).strip() if "_" in l else l for l in self.test_labels
-        ]
         self.test_label_ids = [label2idx[lbl] for lbl in self.test_labels]
 
         # preapare OOD test data
