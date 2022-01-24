@@ -227,6 +227,7 @@ class DNNC(object):
         ood_train_data = train_ood_df.utterance.tolist()
 
         # for dnnc, unique train labels should get replaced by train data
+        ood_train_examples = []
         for e in ood_train_data:
             for l in self.train_data:
                 ood_train_examples.append((e, l))
