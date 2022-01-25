@@ -1,6 +1,5 @@
 import os
 import sys
-import csv
 import json
 import logging
 import random
@@ -27,8 +26,6 @@ from sklearn.metrics import (
     accuracy_score,
     precision_score,
     recall_score,
-    confusion_matrix,
-    ConfusionMatrixDisplay,
     precision_recall_curve,
     average_precision_score,
     PrecisionRecallDisplay,
@@ -37,7 +34,7 @@ from sklearn.metrics import (
 import copy
 
 from taichi.config import Config
-from taichi.error_analysis import ErrorAnalysis
+from taichi.utils import set_seed
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
@@ -55,11 +52,10 @@ THRESHOLD_STEP = 0.01
 
 class USLP(object):
     """
-    Main class for USLP (Utterance Semantic Label Pair) including initialization,
-    training and evaluation
+    USLP (Utterance Semantic Label Pair) training and evaluation pipeline
     """
 
-    def __init__(self, config_file="./taichi/og_uslp_config.json"):
+    def __init__(self, config_file="./taichi/uslp_config.json"):
         with open(config_file, "r") as f:
             config_dict = json.loads(f.read())
         self.config = Config(config_dict)
@@ -72,7 +68,6 @@ class USLP(object):
         self.ood_train_dataloader = None
         # test parameters
         self.test_data = None
-        self.unique_test_labels = None
         self.test_label_ids = None
         self.ood_test_data = None
 
@@ -91,75 +86,43 @@ class USLP(object):
         logger.info(f"device: {self.device}")
 
         # set up seeds
-        np.random.seed(config.seed)
-        random.seed(config.seed)
-        torch.manual_seed(config.seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+        set_seed(config.seed)
 
         # load tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(config.bert_model)
+        self.tokenizer = AutoTokenizer.from_pretrained(config.model)
 
         # train_dataloader
-        aggregated_data_df = pd.read_csv(
-            config.train_data_path, names=["utterance", "language", "label"]
-        )
-        train_data = list(aggregated_data_df.utterance)
-        train_labels = list(aggregated_data_df.label)
-        train_languages = list(aggregated_data_df.language)
-
-        unique_languages = sorted(list(set(train_languages)))
+        train_data_df = pd.read_csv(config.train_data_path, names=["utterance", "label"])
+        train_data = list(train_data_df.utterance)
+        train_labels = list(train_data_df.label)
 
         self.train_data = train_data
 
         train_labels = [" ".join(l.split("_")).strip() for l in train_labels]
 
-        aggregated_data_df["label"] = train_labels
-        # map languages to unique labels it contains examples of in the data
-        lang2label = {}
-        for language in unique_languages:
-            lang_df = aggregated_data_df.loc[aggregated_data_df.language == language]
-            lang2label[language] = sorted(list(set(lang_df.label)))
-
-        multilingual_label2idx = {}
-        self.multilingual_idx2label = {}
-        for language, labels in lang2label.items():
-            if language not in multilingual_label2idx:
-                multilingual_label2idx[language] = {}
-                self.multilingual_idx2label[language] = {}
-                for index, label in enumerate(labels):
-                    multilingual_label2idx[language][label] = index
-                    self.multilingual_idx2label[language][index] = label
-
         # get unique labels and make sure the order stays consistent by sorting
-        unique_train_labels = sorted(list(set(train_labels)))
+        unique_labels = sorted(list(set(train_labels)))
+        self.unique_labels = unique_labels
+        label2idx = {}
+        for i, l in enumerate(unique_labels):
+            label2idx[l] = i
+        idx2label = {}
+        for i, l in enumerate(unique_labels):
+            idx2label[i] = l
+        self.idx2label = idx2label
 
-        # get positive examples with language information to aid with negative examples
+        # postive examples in NLI format
         positive_train_examples = [
-            (data, label, lang)
-            for data, label, lang in zip(train_data, train_labels, train_languages)
+            (data, label)
+            for data, label in zip(train_data, train_labels)
         ]
 
-        # get negative examples keeping language in mind
+        # negative examples in NLI format
         negative_train_examples = []
         for e in positive_train_examples:
-            for l in lang2label[e[2]]:
+            for l in label2idx:
                 if e[1] != l:
-                    negative_train_examples.append((e[0], l, e[2]))
-
-        if config.transform_labels:
-            positive_train_examples = [
-                (d[0], str(multilingual_label2idx[d[2]][d[1]]))
-                for d in positive_train_examples
-            ]
-            negative_train_examples = [
-                (d[0], str(multilingual_label2idx[d[2]][d[1]]))
-                for d in negative_train_examples
-            ]
-
-        # modify positive and negative examples to remove the language element
-        positive_train_examples = [(d[0], d[1]) for d in positive_train_examples]
-        negative_train_examples = [(d[0], d[1]) for d in negative_train_examples]
+                    negative_train_examples.append((e[0], l))
 
         positive_train_features = self.tokenizer(
             positive_train_examples,
@@ -169,7 +132,7 @@ class USLP(object):
             truncation=True,
         )
 
-        # checking if token_type_ids available for positive examples - should be same for all
+        # Bert-like tokenizers produce token_type_ids, while RoBERTa-like toknizers don't
         pos_token_type_ids = positive_train_features.get("token_type_ids", None)
         if pos_token_type_ids is None:
             self.is_bert_type_tokenizer = False
@@ -230,16 +193,13 @@ class USLP(object):
             shuffle=True,
         )
 
-        # oos_train_dataloader
-        ood_train_data = []
-        with open(config.ood_train_data_path) as file:
-            csv_file = csv.reader(file)
-            for line in csv_file:
-                ood_train_data.append(line[0])
+        # prepare OOD data
+        train_ood_df = pd.read_csv(config.ood_train_data_path, names=["utterance", "label"])
+        ood_train_data = train_ood_df.utterance.tolist()
 
         ood_train_examples = []
         for e in ood_train_data:
-            for l in unique_train_labels:
+            for l in unique_labels:
                 ood_train_examples.append((e, l))
 
         ood_train_features = self.tokenizer(
@@ -270,53 +230,29 @@ class USLP(object):
             ood_train_dataset, batch_size=config.train_batch_size // 4, shuffle=True
         )
 
-        # load test dataloader
-        self.test_data, self.test_labels, self.test_languages = [], [], []
-        with open(config.test_data_path) as file:
-            csv_file = csv.reader(file)
-            for line in csv_file:
-                self.test_data.append(line[0])
-                self.test_languages.append(line[1])
-                self.test_labels.append(line[2])
-
-        # detect language and assign label2idx for individual languages appropriately
-        self.unique_test_labels = lang2label
-
+        # prepare in-domain test data
+        test_df = pd.read_csv(config.test_data_path, names=["utterance", "label"])
+        self.test_data, self.test_labels = test_df.utterance.tolist(), test_df.label.tolist()
         self.test_labels = [
             " ".join(l.split("_")).strip() if "_" in l else l for l in self.test_labels
         ]
-        self.test_label_ids = [
-            multilingual_label2idx[lang][lbl]
-            for lbl, lang in zip(self.test_labels, self.test_languages)
-        ]
+        self.test_label_ids = [label2idx[lbl] for lbl in self.test_labels]
 
-        # load oos test dataloader
-        self.ood_test_data = []
-        with open(config.ood_test_data_path) as file:
-            csv_file = csv.reader(file)
-            for line in csv_file:
-                self.ood_test_data.append(line[0])
+        # preapare OOD test data
+        test_ood_df = pd.read_csv(config.ood_test_data_path, names=["utterance", "label"])
+        self.ood_test_data = test_ood_df.utterance.tolist()
 
         self.model = AutoModelForSequenceClassification.from_pretrained(
             config.pretrained_model_path
         )
-        if config.error_analysis:
-            self.ea = ErrorAnalysis(config.error_analysis_dir)
 
     def train(self):
-        # load pretrained NLI model
         config = self.config
         model = self.model
-        if config.freeze_embedding:
-            for p in model.roberta.embeddings.parameters():
-                p.requires_grad = False
         model.to(self.device)
 
-        num_train_optimization_steps = (
-            len(self.pos_train_dataloader) * config.num_train_epochs
-        )
+        num_train_optimization_steps = len(self.pos_train_dataloader) * config.num_train_epochs
 
-        # load optimizer and scheduler
         param_optimizer = list(model.named_parameters())
         no_decay = ["bias", "LayerNorm.bias", "LayerNorm.weight"]
         optimizer_grouped_parameters = [
@@ -342,6 +278,7 @@ class USLP(object):
         optimizer = AdamW(
             optimizer_grouped_parameters, lr=config.learning_rate, eps=1e-8
         )
+
         scheduler = get_linear_schedule_with_warmup(
             optimizer,
             num_warmup_steps=int(
@@ -363,7 +300,7 @@ class USLP(object):
             total=num_train_optimization_steps, dynamic_ncols=True, initial=0
         )
         for epoch in range(config.num_train_epochs):
-            for _, pos_batch in enumerate(self.pos_train_dataloader):
+            for step, pos_batch in enumerate(self.pos_train_dataloader):
                 model.train()
                 neg_batch = next(iter(self.neg_train_dataloader))
                 ood_batch = next(iter(self.ood_train_dataloader))
@@ -414,13 +351,14 @@ class USLP(object):
                     attention_mask=attention_mask,
                     token_type_ids=token_type_ids,
                 )[0]
-                loss = loss_fct(logits.view(-1, 2), labels.view(-1))
+                loss = loss_fct(logits.view(-1, 2), labels.view(-1)) / config.gradient_accumulation_steps
 
                 # backward
-                optimizer.zero_grad()
                 loss.backward()
-                optimizer.step()
-                scheduler.step()
+                if step % config.gradient_accumulation_steps == 0:
+                    optimizer.step()
+                    scheduler.step()
+                    optimizer.zero_grad()
 
                 preds = logits.cpu().detach().numpy()
                 preds = np.argmax(preds, axis=1)
@@ -428,6 +366,7 @@ class USLP(object):
                 acc = accuracy_score(truth, preds)
                 p = precision_score(truth, preds, average="macro", zero_division=1)
                 r = recall_score(truth, preds, average="macro", zero_division=1)
+
                 progress_bar.set_description(
                     "Epoch "
                     + str(epoch)
@@ -436,11 +375,11 @@ class USLP(object):
                 )
                 progress_bar.update(1)
 
-            # save model when finish
-            if config.checkpoint_dir and epoch == config.num_train_epochs - 1:
-                if not os.path.isdir(config.checkpoint_dir):
-                    os.mkdir(config.checkpoint_dir)
-                model.save_pretrained(config.checkpoint_dir)
+        # save model when finish
+        if config.checkpoint_dir:
+            if not os.path.isdir(config.checkpoint_dir):
+                os.makedirs(config.checkpoint_dir)
+            model.save_pretrained(config.checkpoint_dir)
 
         progress_bar.close()
 
@@ -451,24 +390,16 @@ class USLP(object):
             config.checkpoint_dir
         )
         model.to(self.device)
-        language = self.test_languages[
-            0
-        ]  # will break on evaluation containing examples from multiple languages
-        unique_labels = self.unique_test_labels[language]
-        if config.transform_labels:
-            unique_labels = [
-                str(multilingual_label2idx[language][l])
-                for l in self.unique_test_labels[language]
-            ]
+        unique_labels = self.unique_labels
 
         res_indomain, prob_indomain = self._evaluation_indomain(
             model,
-            language,
             self.test_data,
             self.test_label_ids,
             self.tokenizer,
             unique_labels,
             self.device,
+            config.test_batch_size
         )
 
         # compute index to print per threshold entered
@@ -479,11 +410,11 @@ class USLP(object):
 
         res_ood_recall, prob_ood = self._evaluation_ood_recall(
             model,
-            language,
             self.ood_test_data,
             self.tokenizer,
             unique_labels,
             self.device,
+            config.test_batch_size
         )
 
         res_ood_prec_f1 = self._evaluation_ood_precision_f1(prob_indomain, prob_ood)
@@ -524,7 +455,6 @@ class USLP(object):
     def _evaluation_indomain(
         self,
         model,
-        language,
         test_data,
         test_labels,
         tokenizer,
@@ -559,7 +489,6 @@ class USLP(object):
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
-        encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
                 if self.is_bert_type_tokenizer != True:
@@ -567,9 +496,6 @@ class USLP(object):
                     token_type_ids = None
                 else:
                     input_ids, attention_mask, token_type_ids = batch
-                if self.config.error_analysis:
-                    for i, input_id in enumerate(input_ids):
-                        encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
                 if self.is_bert_type_tokenizer == True:
@@ -590,9 +516,6 @@ class USLP(object):
         max_prob = np.max(preds[:, :, 0], axis=1)
 
 
-        if self.config.error_analysis:
-            self.ea.save_pr_curve_plot(preds, test_labels, unique_labels)
-
         res = []
         for threshold in np.arange(THRESHOLD_MIN, THRESHOLD_MAX, THRESHOLD_STEP):
             preds = []
@@ -601,26 +524,6 @@ class USLP(object):
                     preds.append(pred_label)
                 else:
                     preds.append(len(unique_labels))
-
-            # save classification report and confusion matrix plots for 0.01 and 0.10 thresholds
-            if threshold == self.config.threshold:
-                if self.config.error_analysis:
-                    # default save path used here, set own path by assigning custom save_path argument
-                    self.ea.save_misclassified_instances(
-                        encoded_inputs,
-                        preds,
-                        test_labels,
-                        unique_labels,
-                        self.multilingual_idx2label,
-                        language,
-                        tokenizer=tokenizer,
-                    )
-                    self.ea.save_intent_classification_report(
-                        preds, test_labels, unique_labels
-                    )
-                    self.ea.save_confusion_matrix_plot(
-                        preds, test_labels, unique_labels
-                    )
 
             acc = accuracy_score(test_labels, preds)
             prec = precision_score(test_labels, preds, average="macro", zero_division=1)
@@ -632,7 +535,6 @@ class USLP(object):
     def _evaluation_ood_recall(
         self,
         model,
-        language,
         ood_test_data,
         tokenizer,
         unique_labels,
@@ -668,7 +570,6 @@ class USLP(object):
         dataloader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
 
         preds = None
-        encoded_inputs = []
         with torch.no_grad():
             for batch in tqdm(dataloader):
                 if self.is_bert_type_tokenizer != True:
@@ -676,9 +577,6 @@ class USLP(object):
                     token_type_ids = None
                 else:
                     input_ids, attention_mask, token_type_ids = batch
-                if self.config.error_analysis:
-                    for i, input_id in enumerate(input_ids):
-                        encoded_inputs.append(input_id)
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
                 if self.is_bert_type_tokenizer == True:
@@ -712,20 +610,6 @@ class USLP(object):
                     preds.append(len(unique_labels))
                     ood_preds.append(NON_ENTAILMENT)
 
-            if threshold == self.config.threshold:
-
-                ood_labels = ["NOT OOD", "OOD"]
-                if self.config.error_analysis:
-                    self.ea.save_intent_classification_report(
-                        ood_preds, ood_gt, ood_labels, save_filename="ood_report.csv"
-                    )
-                    self.ea.save_confusion_matrix_plot(
-                        ood_preds,
-                        ood_gt,
-                        ood_labels,
-                        save_filename="ood_confusion_matrix.png",
-                    )
-
             recall = recall_score(ood_gt, ood_preds, zero_division=1)
             res.append((threshold, recall))
         return res, max_prob
@@ -736,7 +620,7 @@ class USLP(object):
         ]
         max_conf = np.concatenate((in_domain_probs, ood_probs))
         res = []
-        for threshold in np.arange(0, 0.91, 0.01):
+        for threshold in np.arange(THRESHOLD_MIN, THRESHOLD_MAX, THRESHOLD_STEP):
             preds = []
             for prob in max_conf:
                 if prob > threshold:
