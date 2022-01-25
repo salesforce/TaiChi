@@ -94,7 +94,7 @@ class DNNC(object):
         set_seed(config.seed)
 
         # load tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(config.bert_model)
+        self.tokenizer = AutoTokenizer.from_pretrained(config.model)
 
         # train_dataloader
         aggregated_data_df = pd.read_csv(

@@ -1,5 +1,5 @@
 {
-    "bert_model": "roberta-base",
+    "model": "roberta-base",
     "checkpoint_dir": "./model/nli-pretrained-roberta-base/dnnc",
     "train_data_path": "./data/CLINC150/5-shot/train.csv",
     "test_data_path": "./data/CLINC150/5-shot/test.csv",
