@@ -114,6 +114,8 @@ class DNNC(object):
             idx2label[i] = l
         self.idx2label = idx2label
 
+        self.train_label_ids = [label2idx[l] for l in self.train_labels]
+
         # create positive and negative train examples
         positive_train_examples = []
         negative_train_examples = []
