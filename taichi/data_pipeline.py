@@ -8,29 +8,26 @@ from collections import Counter
 
 class DataPipeline(object):
     """
-    expects path with csv or json files to process and sample them
-    default language set is english with the onus on user to change
-    the language in case of working with a different language
+    expects path with csv or json files
     """
 
-    def __init__(self, name, data_path, language="en_US"):
+    def __init__(self, name, data_path):
         self.name = name
         self.data_path = data_path
-        self.language = language
         self.raw_data = None
 
     def sample_from_csv(self, n_shot=None, random_state=0):
         """
         expects a file in csv format as follows:
-        utterance,language,label (no headers and no index)
+        utterance, label (no headers and no index)
 
         Example:
         book a ticket from San Francisco to New York,en_US,Book a Flight
 
-        returns a subsampled pandas dataframe with utterance, language and label columns
+        returns a subsampled pandas dataframe with utterance and label columns
         if no n_shot provided, just returns the dataframe as is
         """
-        df = pd.read_csv(self.data_path, names=["utterance", "language", "label"])
+        df = pd.read_csv(self.data_path, names=["utterance", "label"])
         self.raw_data = df
         if n_shot is not None:
             examples_per_class = dict(Counter((df.label)))
@@ -56,7 +53,7 @@ class DataPipeline(object):
         Example:
         {'train':[[utterance1, label1], [utterance2, label2], ... 'test':[[...]]}
 
-        returns a subsampled pandas dataframe with utterance, language and label columns
+        returns a subsampled pandas dataframe with utterance and label columns
         """
         with open(self.data_path, "r") as input_json:
             self.raw_data = json.load(input_json)
@@ -70,7 +67,6 @@ class DataPipeline(object):
             )
             raise Exception(error_message)
 
-        df["language"] = self.language
         cols = list(df.columns)
         cols = cols[:1] + [cols[-1]] + cols[1:-1]
         df = df[cols]
@@ -100,8 +96,7 @@ class DataPipeline(object):
         save_filename=None,
     ):
         """
-        saves the subsampled data from csv/json into csv with utterance,
-        language and label columns with no headers and no index in the requisite
+        saves the subsampled data from csv/json into csv with utterance and label columns with no headers and no index in the requisite
         save directory
         """
         if is_json:
@@ -134,8 +129,7 @@ class DataPipeline(object):
         save_filename=None,
     ):
         """
-        saves the subsampled data from csv/json into json with individual utterance,
-        language and label values as an independent array in the requisite
+        saves the subsampled data from csv/json into json with individual utterance and label values as an independent array in the requisite
         save directory
         """
         if is_json:
