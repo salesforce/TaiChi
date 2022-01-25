@@ -620,7 +620,7 @@ class USLP(object):
         ]
         max_conf = np.concatenate((in_domain_probs, ood_probs))
         res = []
-        for threshold in np.arange(0, 0.91, 0.01):
+        for threshold in np.arange(THRESHOLD_MIN, THRESHOLD_MAX, THRESHOLD_STEP):
             preds = []
             for prob in max_conf:
                 if prob > threshold:

@@ -42,22 +42,10 @@ class ExperimentRunTest(unittest.TestCase):
         logger.info('begin the model evaluation...')
         u.eval()
         logger.info('checking if results have been saved...')
-        self.assertTrue(os.path.exists(u.config.error_analysis_dir), 'error analysis folder was not created!')
-        files = [f for f in os.walk(u.config.error_analysis_dir)]
-        self.assertEqual(len(files[0][-1]), 6, 'error analysis files are missing!') # count files in error_analysis_dir
-        
-        # check for individual files
-        self.assertTrue(os.path.exists(os.path.join(u.config.error_analysis_dir, "misclassified_examples.csv")))
-        self.assertTrue(os.path.exists(os.path.join(u.config.error_analysis_dir, "intent_classification_report.csv")))
-        self.assertTrue(os.path.exists(os.path.join(u.config.error_analysis_dir, "confusion_matrix.png")))
-        self.assertTrue(os.path.exists(os.path.join(u.config.error_analysis_dir, "pr_curve_plot.png")))
-        self.assertTrue(os.path.exists(os.path.join(u.config.error_analysis_dir, "ood_report.csv")))
-        self.assertTrue(os.path.exists(os.path.join(u.config.error_analysis_dir, "ood_confusion_matrix.png")))
 
         # check if result file created
         self.assertTrue(os.path.exists(u.config.save_result_fp), 'results file missing') 
         shutil.rmtree(u.config.checkpoint_dir)
-        shutil.rmtree(u.config.error_analysis_dir)
         os.remove(u.config.save_result_fp)
         logger.info('testing completed!')
 
