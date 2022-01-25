@@ -40,40 +40,59 @@ We use [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data) fo
     1. `from taichi.data_pipeline import DataPipeline`
 2. The following step sets up the data pipeline object with the dataset name, path and language
 
-    1. `dp = DataPipeline(name=“clinc150”, data_path=“full path to data file in csv or json, edit accordingly”, language=“en_US by default”)`
+    1. `dp = DataPipeline(name=“clinc150”, data_path=“full path to data file in csv or json, edit accordingly”)`
     2. Expects json data file in the following format:
         1. `{split: list(list containing utterance and label)}`
-            1. Example: `{'train':[[utterance1, label1], [utterance2, label2], ... 'test':[[...]]}`
+            - Example: `{'train':[[utterance1, label1], [utterance2, label2], ... 'test':[[...]]}`
         2. The data format is as found in CLINC150 dataset
     3. Expects csv data file in the following format:
-        1. `utterance,language,label (no headers and no index)`
-            1. Example: `book a ticket from San Francisco to New York,en_US,Book a Flight`
+        1. `utterance, label (no headers and no index)`
+            - Example: `book a ticket from San Francisco to New York, Book a Flight`
 1. Based on the data file and format received (csv/json), we can subsample the input data file and save it as csv or json in the path (`save_dir`) of our choice
     1. to save to csv, use the following command:
         1. `dp.save_subsampled_data_to_csv(save_dir="./data/CLINC150/1-shot", split='train', n_shot=1, is_json=True, random_state=42,  save_filename="train.csv")`
-            1. Here, the default split `train`  (will check for right split name and throw exception in case of incorrect split name; also does not matter if the data source is `csv`) in the `CLINC150` dataset json file (`is_json=True`, False in case of data source being a `csv` ) gets subsampled into `10` samples per class (will check if possible_ and saved in `os.path.join(save_dir, save_filename)`  creating the path if it doesn’t exist in the process as `csv` file in the format mentioned above in 2c
+            - Here, the default split `train`  (will check for right split name and throw exception in case of incorrect split name; also does not matter if the data source is `csv`) in the `CLINC150` dataset json file (`is_json=True`, False in case of data source being a `csv` ) gets subsampled into `10` samples per class (will check if possible_ and saved in `os.path.join(save_dir, save_filename)`  creating the path if it doesn’t exist in the process as `csv` file in the format mentioned above in 2c
     2. we can save our file as json in much the same way with the following command:
         1. `dp.save_subsampled_data_to_json(save_dir="./data/CLINC150/1-shot", split='train', n_shot=1, is_json=True, random_state=42, orient='records', save_filename="1-shot-train.json")`
 
 **2. Modifying Config Parameters**
 
 1. We have individual config files containing hyperparameters for USLP and DNNC models. Please find below an example of the config file for USLP (the DNNC config file also has the same parameters):
-    ![Configuration](./readme/config.png)
-    1. Let us dive deeper into some of the individual parameters and groups of parameters to understand why they are needed
-        1. `bert-model` is for the pretrained tokenizer that we will be using to derive features from sequences
-        2. `checkpoint_dir` is to save the model after training the model reformulating the classification task as an entailment prediction problem. We use the same path for loading the trained model during evaluation as well.
-        3. `train_data_path`, `test_data_path`, `ood_train_data_path` and `ood_test_data_path` are user defined paths for the model to know where to take the data from. One can see how the `save_dir` during the data sampling is used as input paths for our downstream classification task. One can adjust the paths per one’s convenience
-        4. `pretrained_model_path` is self explanatory as we mention the pretrained model path we intend to use to reformulate and train again as an entailment prediction problem
+    ```python
+    {
+        "model": "roberta-base",
+        "checkpoint_dir": "./model/nli-pretrained-roberta-base/uslp",
+        "train_data_path": "./data/CLINC150/5-shot/train.csv",
+        "test_data_path": "./data/CLINC150/5-shot/test.csv",
+        "ood_train_data_path": "./data/CLINC150/5-shot/ood_train.csv",
+        "ood_test_data_path": "./data/CLINC150/5-shot/ood_test.csv",
+        "gradient_accumulation_steps": 1,
+        "learning_rate": 5e-05,
+        "no_cuda": false,
+        "num_train_epochs": 200,
+        "pretrained_model_path": "./model/nli-pretrained-roberta-base",
+        "save_result_fp": "./data/CLINC150/5-shot/uslp_inference.json",
+        "seed": 42,
+        "max_seq_length": 64,
+        "test_batch_size": 128,
+        "train_batch_size": 128,
+        "transform_labels": false,
+        "warmup_proportion": 0.1,
+        "weight_decay": 0.0001,
+        "threshold": 0.01
+    }
+    ```
+    - Let us dive deeper into some of the individual parameters and groups of parameters to understand why they are needed
+        1. `model` defines the model name, e.g. roberta-base, TaiChi will use this information to load pretrained tokenizer from huggingface;
+        2. `checkpoint_dir` is the user defined directory for saving models after finetuning;
+        3. `train_data_path`, `test_data_path`, `ood_train_data_path` and `ood_test_data_path` are user defined paths for the model to know where to take the data from;
+        4. `pretrained_model_path` specifies the path to the model pretrained on general NLI datasets;
         5. `save_result_fp` is the path to store the inference results in terms of threshold, in-domain accuracy, precision, recall, and f1 macro along with ood-recall in a `json` format
-        6. `error_analysis` is a flag to indicate if the user is interested in some quick error analysis where on evaluation, the user can quickly gather where the model made mistakes (misclassifications), see a more detailed classification performance per class (classification report) and see visualizations in the form of confusion matrix for both in-domain and OOD samples. All these files get generated and saved in `error_analysis_dir`
-        7. All other hyperparameters mentioned in the config are self explanatory and tweaking them can potentially help users in better performance on their datasets of choice
-
-**Note:** The paths for the model and data (parameters) are currently generically set and will have to be modified by the user suitably in the config file to ensure smooth running of the library.
-
+        6. Other configuration parameters are mostly about hyperparameters for training.
 
 **3. Run Code End-to-End**
 
-1. Please find a quick snapshot on how the USLP model can be trained as below
+- Please find a quick snapshot on how the USLP model can be trained as below
     ```python
     from taichi import uslp # import algorithm
     
@@ -86,24 +105,11 @@ We use [CLINC150 Dataset](https://github.com/clinc/oos-eval/tree/master/data) fo
     uslp_model.eval() # model evaluation
     ```
 
-1. DNNC has the same easy API signature for training and evaluation
-    ```python
-    from taichi import dnnc # import algorithm
-    
-    dnnc_model = dnnc.DNNC() # instantiate algorithm (default config path set to ./taichi/dnnc_config.json)
-    
-    dnnc_model.init() # initialize the data and model
-    
-    dnnc_model.train() # model training
-    
-    dnnc_model.eval() # model evaluation
-    ```
-
 **Results From Paper (*Focus on DNNC and USLP-T*)**
 ![paper-results](./readme/USLP_Paper_Results.png)
 
 **Benchmark results on CLINC150**
-- Computing environment: torch==1.7.1, transformers==4.5.1, A100 GPU (user might expect results to vary with different versions/devices)
+- Computing environment: torch==1.7.1, transformers==4.5.1, A100 GPU (user might expect results to vary with different software versions/hardwares)
 - Hyper-parameter
   - threshold: 0.01
   - training batch size: 128
@@ -147,8 +153,7 @@ We also compare this with using off-the-shelf (not NLI-pretrained) BERT model (`
         1. If we consider CLINC150 full-shot experiment, the training data has 50 (`m`) examples per class and 150 classes (`n`) = 7500 examples `(m * n)`
         2. If we consider one example out of them and pair them to get positive and negative NLI pairs based on whether they belong to the same class, we get `(m-1)` 49 positive pairs and `(m * n - m)` 7450 negative pairs. The ratio between them `(m * n - m)/(m - 1)` is approximately equal to `n` which is 150 (152.04 in this case)
         3. If all pairs add up, the sheer number of examples makes it prohibitive to train the model and get results quickly.
-3. The tricks we implemented are NOT part of the DNNC code we share, which makes it important to emphasize that it may face memory and training time issues if used on a large dataset.
-
+3. The tricks we implemented are NOT part of the DNNC code we share since TaiChi is designed for few shot learning use case.
 
 
 **Testing**
@@ -169,4 +174,4 @@ Please note that the config files (`test_uslp_config.json` and `test_dnnc_config
 
 
 ## Contact
-Please email jqu@salesforce.com for questions or feedback.
+Please feel free to reach out to jqu@salesforce.com for questions or feedback.
